@@ -8,5 +8,5 @@ create table if not exists tasks(
 
 create table if not exists task_dependencies(
 	task_id INTEGER references tasks(id),
-	prereq_id INTEGER references tasks(id),
+	prereq_id INTEGER references tasks(id)
 );
