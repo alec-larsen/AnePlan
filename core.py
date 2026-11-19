@@ -66,7 +66,7 @@ def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int
     conn = sqlite3.connect(_ROOT_DIRECTORY / "tasks.db")
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO tasks (parent_id, title, weight, completion)
+    INSERT INTO tasks (parent_id, name, weight, completion)
     VALUES (?,?,?,?)
     """, (parent, task_name, weight, completion))
     conn.commit()

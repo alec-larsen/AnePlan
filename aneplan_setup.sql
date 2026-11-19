@@ -1,7 +1,7 @@
 create table if not exists tasks(
 	id INTEGER primary key,
 	parent_id INTEGER references tasks(id),
-	title TEXT UNIQUE not null,
+	name TEXT UNIQUE not null,
 	weight numeric not null default 1,
 	completion numeric not null default 0
 );
