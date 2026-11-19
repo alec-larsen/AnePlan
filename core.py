@@ -26,21 +26,27 @@ def setup():
     cursor.executescript(setup_code)
     conn.commit()
 
-def task_exists(id: int):
+def task_exists(id: int|str):
     """
     Check if task with given id exists.
 
     Arguments:
-    id: task id to search for
+    id: task identifier to search for; id if int, else task name
     """
     cursor = conn.cursor()
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    WHERE id = ?
-    """, (id,))
-    count = cursor.fetchone()[0]
-    return count > 0
+    #If identifier 
+    if isinstance(id, int):
+        return cursor.execute("""
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE id = ?
+        """, (id,)).fetchone()[0] > 0
+    else:
+        return cursor.execute("""
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE name = ?
+        """, (id,)).fetchone()[0] > 0
 
 
 def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None, prerequesites: list[int] = []):
