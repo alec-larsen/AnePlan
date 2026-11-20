@@ -101,5 +101,3 @@ def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int
     VALUES (?,?,?,?)
     """, (parent, task_name, weight, completion))
     conn.commit()
-
-setup() #Setup call is here temporarily; TODO: Move to main.py after basic functions are complete.
