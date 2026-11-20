@@ -64,6 +64,23 @@ def fetch_task_id(name: str):
     WHERE name = ?
     """, (name,)).fetchone()[0]
 
+def in_cycle(task: int, parent: int):
+    """
+    Check whether task with parent forms a cycle.
+    """
+    #Traverse up task tree looking for a root task (parent is None)
+    while parent is not None:
+        parent = conn.execute("""
+        SELECT parent_id
+        FROM tasks
+        WHERE id = ?
+        """, (parent,)).fetchone()[0]
+        #If parent is the original task, we have found a cycle.
+        if parent == task:
+            return True
+
+    return False
+
 def get_root_tasks():
     """
     Get ids of root tasks (tasks with no parents)
