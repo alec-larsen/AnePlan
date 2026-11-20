@@ -107,6 +107,20 @@ def get_leafs():
     """).fetchall()
     return [id[0] for id in task_ids if id[0] not in [res[0] for res in results]]
 
+def task_str(id: int):
+    """
+    Build string representation of given task with id.
+
+    Note that all float values are rounded to two decimal places.
+    """
+    #Get task by id and unpack resultant tuple to obtain remaining task details.
+    parent, name, weight, completed = conn.execute("""
+    SELECT *
+    FROM tasks
+    WHERE id = ?
+    """, (id,)).fetchone()[1:]
+    return(f"{name} - {completed:.2f}/{weight} ({completed/weight*100:.2f}%)")
+
 def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None, prerequesites: list[int] = []):
     """
     Add task to database.
