@@ -72,3 +72,63 @@ def add_task():
                 parent = core.fetch_task_id(parent)
             break
     core.add_task(name, weight, completed, parent)
+
+def render_tasklist_h(task: int = None, depth: int = 0):
+    """
+    Print current tasklist in hierarchical format.
+
+    task (int): Root task of tree to render. Default None renders all tasks.
+    depth (int): Current depth of task being printed in tree. Recursion argument; should NOT be modifed.
+    """
+    for subtask in core.get_children(task):
+        print(' '*4*depth + core.task_str(subtask))
+        #Recursively call rendering from subtask. Increase depth by 1
+        render_tasklist_h(subtask, depth+1)
+    
+def render_tasklist_l():
+    """
+    Print current tasklist in leaf-only format.
+    """
+    leaf_ids = core.get_leafs()
+    for id in leaf_ids:
+        print(core.task_str(id))
+
+def render_tasklist_r():
+    """
+    Print current tasklist in root-only format.
+    """
+    root_ids = core.get_root_tasks()
+    for id in root_ids:
+        print(core.task_str(id))
+
+def render_tasklist():
+    """
+    Print current tasklist. Accepts three primary formats:
+
+    H: Hierarchical - All tasks outputted, subtasks indented past parent task
+    L: Leaf only - Prints only leaf tasks (those without any subtasks/children)
+    R: Root only - Prints only root tasks (those with no parent tasks)
+    """
+    while True:
+        print("Render from the following formats:")
+        print("H: Hierarchical - All tasks outputted, subtasks indented past parent task (default format)")
+        print("L: Leaf only - Prints only leaf tasks (those without any subtasks/children)")
+        print("R: Root only - Prints only root tasks (those with no parent tasks)")
+        format = input("> ").strip().upper()
+        if format in ['H','L','R']:
+            break
+        confirm = input("Invalid format entered - defaulting to 'H'. If this is OK, please type 'Y' (all other inputs will be marked as 'no'): ")
+        if confirm.strip().upper() == 'Y':
+            break
+        print("Default option rejected. Returning to format selection...\n")
+
+    if format == 'L':
+        print("-"*50 + '\n' + "Leaf tasks" + '\n' + '-'*50)
+        render_tasklist_l()
+    elif format == 'R':
+        print("-"*50 + '\n' + "Root tasks" + '\n' + '-'*50)
+        render_tasklist_r()
+    #Format is either 'H' or 'H' was accepted as the default format.
+    else:
+        print("-"*50 + '\n' + "Task Hierarchy" + '\n' + '-'*50)
+        render_tasklist_h()
