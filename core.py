@@ -27,7 +27,7 @@ def setup():
     cursor.executescript(setup_code)
     conn.commit()
 
-def task_exists(id: int|str):
+def task_exists(task: int|str):
     """
     Check if task with given id exists.
 
@@ -35,19 +35,22 @@ def task_exists(id: int|str):
     id: task identifier to search for; id if int, else task name
     """
     cursor = conn.cursor()
-    #If identifier 
-    if isinstance(id, int):
+    #If id is strint, it refers to an id; cast to int
+    if util.is_strint(task):
+        task = int(task)
+    #If identifier is integer
+    if isinstance(task, int):
         return cursor.execute("""
         SELECT COUNT(*)
         FROM tasks
         WHERE id = ?
-        """, (id,)).fetchone()[0] > 0
+        """, (task,)).fetchone()[0] > 0
     else:
         return cursor.execute("""
         SELECT COUNT(*)
         FROM tasks
         WHERE name = ?
-        """, (id,)).fetchone()[0] > 0
+        """, (task,)).fetchone()[0] > 0
 
 def fetch_task_id(name: str):
     """
