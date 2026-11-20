@@ -75,10 +75,14 @@ def get_root_tasks():
     """).fetchall()
     return [res[0] for res in results]
 
-def get_children(task: int|str):
+def get_children(task: int|str|None):
     """
-    Get ids of all children for a given task with id.
+    Get ids of all tasks whose parent is specified by the id or name given.
+
+    If an empty task (i.e. None) is given, return all root tasks.
     """
+    if task is None:
+        return get_root_tasks()
     #If task string is supplied, we cast to int first in order to search
     if isinstance(task, str):
         #If the user inputted a task id, it will be string
