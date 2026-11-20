@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import sqlite3
 import sys
+import util
 
 #Set root directory of application:
 #Use executable directory when frozen
