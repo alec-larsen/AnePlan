@@ -74,6 +74,39 @@ def get_root_tasks():
     """).fetchall()
     return [res[0] for res in results]
 
+def get_children(task: int|str):
+    """
+    Get ids of all children for a given task with id.
+    """
+    #If task string is supplied, we cast to int first in order to search
+    if isinstance(task, str):
+        #If the user inputted a task id, it will be string
+        if util.is_strint(task):
+            task = int(task)
+        #If the input was not a strint, it should be the name of a task. We fetch its corresponding task_id
+        else:
+            task = fetch_task_id(task)
+    results = conn.execute("""
+        SELECT id
+        FROM tasks
+        WHERE parent_id = ?
+        """, (task,)).fetchall()
+    return [res[0] for res in results]
+
+def get_leafs():
+    """
+    Get ids of leaf tasks (tasks with no children)
+    """
+    results = conn.execute("""
+        SELECT parent_id
+        FROM tasks
+        """).fetchall()
+    task_ids = conn.execute("""
+        SELECT id
+        FROM tasks
+    """).fetchall()
+    return [id[0] for id in task_ids if id[0] not in [res[0] for res in results]]
+
 def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None, prerequesites: list[int] = []):
     """
     Add task to database.
