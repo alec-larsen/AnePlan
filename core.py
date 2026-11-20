@@ -52,7 +52,7 @@ def fetch_task_id(name: str):
     """
     Given the name of a task, find its integer id
 
-    If a task witht he given name does not exist, return -1
+    If a task with the given name does not exist, return -1
     """
     if not task_exists(name):
         return -1
@@ -63,6 +63,16 @@ def fetch_task_id(name: str):
     WHERE name = ?
     """, (name,)).fetchone()[0]
 
+def get_root_tasks():
+    """
+    Get ids of root tasks (tasks with no parents)
+    """
+    results = conn.execute("""
+    SELECT id
+    FROM tasks
+    WHERE parent_id is NULL
+    """).fetchall()
+    return [res[0] for res in results]
 
 def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None, prerequesites: list[int] = []):
     """
