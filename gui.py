@@ -12,7 +12,7 @@ STATE = {
 
 #Initialize control panel
 master = Tk()
-master.geometry("400x80")
+master.geometry("400x600")
 master.title("AneTask Control Panel")
 
 tasks = Tk()
@@ -86,30 +86,53 @@ def render_tasklist_lr(mode: str):
         Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
         Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
 
+def render_tasklist_h(task: int = None, depth: int = 0, row: int = 0, task_tree = None):
+    """
+    Render list of all tasks in hierarchy format.
+    """
+    #Initialize frame widgets in the first pass only.
+    if depth == 0:
+        clear_window(tasks)
+        #If viewing task hierarchy, ensure mode is set to H for future calls to render_tasklist()
+        STATE["render_mode"] = "H"
+        #Print appropriate table heading
+        Label(tasks,text="ALL TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        task_tree = Frame(tasks)
+        task_tree.grid(column=0,row=1)
+    #Get all children of current task
+    for subtask in core.get_children(task):
+        #Add indent for every level of depth subtask sits at in tree
+        Label(task_tree,text='● ' + core.task_str(subtask)).grid(column=0,row=row,padx=50*depth,pady=2,sticky="w")
+        #Recursively call rendering from subtask. Increase depth by 1
+        row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
+    return row
+
 def render_tasklist():
     if STATE["render_mode"] == "L":
         render_tasklist_lr("L")
     elif STATE["render_mode"] == "R":
         render_tasklist_lr("R")
     else:
-        pass
+        render_tasklist_h()
         #TODO: implement render_tasklist_h
 
-
-
-
-Label(master, text="Options:", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
+Label(master, text="Options", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 render_options = Frame(master)
 render_options.grid(column=0,row=1)
 
-Label(render_options, text="Tasklist View:").grid(column = 0, row = 0)
+Label(render_options, text="Tasklist Quickview:").grid(column = 0, row = 0)
 Button(render_options, text="Leaf-Only Mode", command=lambda: render_tasklist_lr("L")).grid(column = 1, row = 0)
 Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist_lr("R")).grid(column = 2, row = 0)
+Button(render_options, text="All Tasks", command=lambda: render_tasklist_h()).grid(column = 3, row = 0)
+
+#TODO: Implement tasklist clearing
+#Label(render_options, text="Clear All:").grid(column = 0, row = 1, sticky='w')
+#Button(render_options, text="Clear", command=lambda: render_tasklist_lr("L")).grid(column = 1, row = 1, sticky='w')
 
 add_task_options = Frame(master)
-add_task_options.grid(column=0,row=2, pady=20)
-Label(add_task_options, text="Add New Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky="w")
+add_task_options.grid(column=0,row=2, pady=20, sticky='w')
+Label(add_task_options, text="Add New Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 Label(add_task_options, text="Task Name:").grid(column=0,row=1,sticky='w')
 name = Entry(add_task_options)
