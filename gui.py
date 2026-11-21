@@ -13,7 +13,6 @@ Label(master, text="Tasklist Rendering Options:").grid(column = 0, row = 0)
 tasks = Tk()
 tasks.geometry("400x300")
 tasks.title("AneTasklist")
-Button(tasks, text="Update Tasklist (Leaf-Only Mode)", command=core.add_task).grid(column = 0, row = 0)
 
 def clear_window(window):
     for w in window.winfo_children():
