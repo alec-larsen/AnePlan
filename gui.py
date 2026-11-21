@@ -41,9 +41,12 @@ def clear_window(window):
 
 def render_tasklist_l():
     clear_window(tasks)
+    #This function only runs if L mode is already active or user requests switching to L mode.
     STATE["render_mode"] = "L"
+    #Get all task ids of leaf tasks
     leaf_ids = core.get_leafs()
     Label(tasks,text="COMPONENT TASKS",font=FONTS["head"]).grid(column=0,row=0)
+    #Render tasklist in its own frame; this keeps the title centered over it
     task_table = Frame(tasks)
     task_table.grid(column=0,row=1)
     Label(task_table, text="Task Name").grid(column = 0, row = 1, sticky = 'w')
@@ -51,9 +54,9 @@ def render_tasklist_l():
     Label(task_table, text="Percent Completed").grid(column = 2, row = 1, sticky = 'e', padx = 20)
     for index, id in enumerate(leaf_ids,2):
         task_pieces = task_str(id)
-        Label(tasks, text=task_pieces[0]).grid(column = 0, row = index, sticky = 'w')
-        Label(tasks, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
-        Label(tasks, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
+        Label(task_table, text=task_pieces[0]).grid(column = 0, row = index, sticky = 'w')
+        Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
+        Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
 
 def render_tasklist_r():
     """
