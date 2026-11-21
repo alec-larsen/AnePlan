@@ -1,5 +1,6 @@
 from tkinter import *
 import tkinter.font as font
+import tkinter.messagebox as mb
 from tkinter.ttk import *
 
 import core
@@ -20,6 +21,14 @@ tasks.title("AneTasklist")
 FONTS = {
     "head": font.Font(family="Helvetica", size=12, weight=font.BOLD)
 }
+
+def shutdown():
+    """
+    Confirm user exit and close both AneTask windows.
+    """
+    if mb.askokcancel("Exit", "Exit AneTask?\nThis will close both the control panel and tasklist."):
+        tasks.destroy()
+        master.destroy()
 
 def task_str(id: int):
     """
@@ -94,4 +103,9 @@ render_leafs = Button(render_options, text="Leaf-Only Mode", command=lambda: ren
 render_roots = Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist_lr("R")).grid(column = 2, row = 0)
 
 render_tasklist()
+
+#Attempting to close either window should trigger both to close
+master.protocol("WM_DELETE_WINDOW", shutdown)
+tasks.protocol("WM_DELETE_WINDOW", shutdown)
+
 master.mainloop()
