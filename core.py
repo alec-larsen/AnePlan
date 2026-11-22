@@ -214,3 +214,45 @@ def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int
     VALUES (?,?,?,?)
     """, (parent, task_name, weight, completion))
     conn.commit()
+
+def remove_task(task: str|int):
+    """
+    Remove task by name or id.
+
+    All children of task become children of deleted task's parent.
+    """
+    #If task string is supplied, we cast to int first in order to search
+    if isinstance(task, str):
+        #If the user inputted a task id, it will be string
+        if util.is_strint(task):
+            task = int(task)
+        #If the input was not a strint, it should be the name of a task. We fetch its corresponding task_id
+        else:
+            task = fetch_task_id(task)
+    #Get parent of task to be deleted.
+    parent = conn.execute("""
+    SELECT parent_id
+    FROM tasks
+    WHERE id = ?
+    """, (task,)).fetchone()[0]
+    #Any children of task become children of parent.
+    conn.execute("""
+    UPDATE tasks
+    SET parent_id = ?
+    WHERE parent_id = ?
+    """, (parent,task))
+    #Remove task from database
+    conn.execute("""
+    DELETE
+    FROM tasks
+    WHERE id = ?
+    """, (task,))
+    conn.commit()
+
+def clear_tasks():
+    """
+    Removes all tasks from tasklist.
+    """
+    #Remove task from database
+    conn.execute("""DELETE FROM tasks""")
+    conn.commit()

@@ -12,11 +12,11 @@ STATE = {
 
 #Initialize control panel
 master = Tk()
-master.geometry("400x600")
+master.geometry("600x600")
 master.title("AneTask Control Panel")
 
 tasks = Tk()
-tasks.geometry("400x300")
+tasks.geometry("400x400")
 tasks.title("AneTasklist")
 
 FONTS = {
@@ -114,21 +114,24 @@ def render_tasklist():
         render_tasklist_lr("R")
     else:
         render_tasklist_h()
-        #TODO: implement render_tasklist_h
+
+def clear_tasklist():
+    if mb.askokcancel("Clear all tasks?","This action will clear ALL tasks from the tasklist.\nAre you sure you want to do this?"):
+        core.clear_tasks()
+        render_tasklist()
 
 Label(master, text="Options", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 render_options = Frame(master)
-render_options.grid(column=0,row=1)
+render_options.grid(column=0,row=1,sticky="w")
 
 Label(render_options, text="Tasklist Quickview:").grid(column = 0, row = 0)
 Button(render_options, text="Leaf-Only Mode", command=lambda: render_tasklist_lr("L")).grid(column = 1, row = 0)
 Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist_lr("R")).grid(column = 2, row = 0)
-Button(render_options, text="All Tasks", command=lambda: render_tasklist_h()).grid(column = 3, row = 0)
+Button(render_options, text="All Tasks", command=render_tasklist_h).grid(column = 3, row = 0)
 
-#TODO: Implement tasklist clearing
-#Label(render_options, text="Clear All:").grid(column = 0, row = 1, sticky='w')
-#Button(render_options, text="Clear", command=lambda: render_tasklist_lr("L")).grid(column = 1, row = 1, sticky='w')
+Label(render_options, text="Clear All:").grid(column = 0, row = 1, sticky='w')
+Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 1, sticky='w')
 
 add_task_options = Frame(master)
 add_task_options.grid(column=0,row=2, pady=20, sticky='w')
@@ -152,16 +155,17 @@ parent.grid(column=1,row=3, sticky='w', padx=20)
 invalid_parent = Label(add_task_options,text="")
 invalid_parent.grid(column=2,row=3, sticky='w', padx=20)
 
-def reset_add_task_errors():
+add_task_flags = [invalid_name, invalid_weight, invalid_parent]
+
+def reset_errors(flags: list[Label]):
     """
-    Reset error flags for adding task
+    Reset error flags provided in list.
     """
-    invalid_name.config(text="")
-    invalid_weight.config(text="")
-    invalid_parent.config(text="")
+    for flag in flags:
+        flag.config(text="")
 
 def add_task(name: str, weight: str, parent: str):
-    reset_add_task_errors()
+    reset_errors(add_task_flags)
     valid_task = True
     if not name:
         invalid_name.config(text="Task name must be non-empty")
@@ -190,10 +194,50 @@ def add_task(name: str, weight: str, parent: str):
 
 Button(add_task_options, text="Add Task", command=lambda: add_task(name.get().strip(),weight.get(),parent.get().strip())).grid(column=0, row=4, sticky= "w")
 
-render_tasklist()
+remove_task_options = Frame(master)
+remove_task_options.grid(column=0,row=3, pady=20, sticky='w')
+Label(remove_task_options, text="Remove Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
+
+Label(remove_task_options, text="Task Name:").grid(column=0,row=1,sticky='w')
+name_r = Entry(remove_task_options)
+name_r.grid(column=1,row=1, sticky='w', padx=20)
+invalid_name_r = Label(remove_task_options,text="")
+invalid_name_r.grid(column=2,row=1, sticky='w', padx=20)
+
+def remove_task(name: str):
+    reset_errors([invalid_name_r])
+    valid_task = True
+    if not name:
+        invalid_name_r.config(text="A task name is required")
+        valid_task = False
+    elif util.is_strint(name):
+        invalid_name_r.config(text="Task name should not be an integer")
+        valid_task = False
+    elif not core.task_exists(name):
+        invalid_name_r.config(text="Task with this name does not exist")
+        valid_task = False
+    if valid_task:
+        children = [child for child in core.get_children(name)]
+        if children:
+            children = [core.fetch_task_name(child) for child in children]
+        parent = core.fetch_task_parent(name)
+        removal_message = f"Remove {name}?"
+        if len(children) > 1:
+            removal_message += f"\n{len(children)} tasks ({', '.join(children)}) will be reassigned as " + ("root tasks." if not core.fetch_task_parent(name) else f"children of task {parent}.")
+        elif len(children) == 1:
+            removal_message += f"\n1 task ({children[0]}) will be reassigned as " + ("a root task." if not core.fetch_task_parent(name) else f"a child of task {parent}.")
+        if mb.askokcancel(f"Remove {name}?", removal_message):
+            core.remove_task(name)
+            #After adding, we need to re-render the tasklist to see changes
+            render_tasklist()
+
+Button(remove_task_options, text="Remove Task", command=lambda: remove_task(name_r.get().strip())).grid(column=0, row=2, sticky= "w")
 
 #Attempting to close either window should trigger both to close
 master.protocol("WM_DELETE_WINDOW", shutdown)
 tasks.protocol("WM_DELETE_WINDOW", shutdown)
 
-master.mainloop()
+if __name__ == "__main__":
+    #Render the tasklist at runtime
+    render_tasklist()
+    master.mainloop()
