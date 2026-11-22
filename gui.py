@@ -131,6 +131,7 @@ def clear_tasklist():
         core.clear_tasks()
         render_tasklist()
 
+#Options widgets
 Label(master, text="Options", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 render_options = Frame(master)
@@ -149,6 +150,7 @@ Button(render_options, text="Change View", command=lambda: render_tasklist_h(tas
 Label(render_options, text="Clear All:").grid(column = 0, row = 2, sticky='w')
 Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 2, sticky='w')
 
+#Add task widgets
 add_task_options = Frame(master)
 add_task_options.grid(column=0,row=2, pady=20, sticky='w')
 Label(add_task_options, text="Add New Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
@@ -211,8 +213,110 @@ def add_task(name: str, weight: str, parent: str):
 
 Button(add_task_options, text="Add Task", command=lambda: add_task(a_name.get().strip(),a_weight.get(),a_parent.get().strip())).grid(column=0, row=4, sticky= "w")
 
+#Modify task widgets
+modify_task_options = Frame(master)
+modify_task_options.grid(column=0,row=3,pady=20,sticky='w')
+Label(modify_task_options, text="Modify Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
+
+Label(modify_task_options,text="Current Task Name:").grid(column=0,row=1,stick='w')
+m_name_old = Entry(modify_task_options)
+m_name_old.grid(column=1,row=1, sticky='w', padx=20)
+m_invalid_name_old= Label(modify_task_options,text="")
+m_invalid_name_old.grid(column=2,row=1, sticky='w', padx=20)
+
+Label(modify_task_options,text="Change Name:").grid(column=0,row=2,stick='w')
+m_name = Entry(modify_task_options)
+m_name.grid(column=1,row=2, sticky='w', padx=20)
+m_invalid_name = Label(modify_task_options,text="")
+m_invalid_name.grid(column=2,row=2, sticky='w', padx=20)
+
+Label(modify_task_options,text="Change Weight:").grid(column=0,row=3,stick='w')
+m_weight = Entry(modify_task_options)
+m_weight.grid(column=1,row=3, sticky='w', padx=20)
+m_invalid_weight = Label(modify_task_options,text="")
+m_invalid_weight.grid(column=2,row=3, sticky='w', padx=20)
+
+Label(modify_task_options,text="Update Completion:").grid(column=0,row=4,stick='w')
+m_comp = Entry(modify_task_options)
+m_comp.grid(column=1,row=4, sticky='w', padx=20)
+m_invalid_comp = Label(modify_task_options,text="")
+m_invalid_comp.grid(column=2,row=4, sticky='w', padx=20)
+
+Label(modify_task_options,text="Change Parent:").grid(column=0,row=5,stick='w')
+m_parent = Entry(modify_task_options)
+m_parent.grid(column=1,row=5, sticky='w', padx=20)
+m_invalid_parent= Label(modify_task_options,text="")
+m_invalid_parent.grid(column=2,row=5, sticky='w', padx=20)
+
+m_task_errors = [m_invalid_name_old, m_invalid_name, m_invalid_weight, m_invalid_comp, m_invalid_parent]
+
+def modify_name(task: str, name: str):
+    """
+    Change name of task.
+    """
+    pass
+
+def modify_weight(task: str, weight: str):
+    """
+    Change weight of task.
+    """
+    pass
+
+def modify_completion(task: str, completion: str):
+    """
+    Change completion of task.
+
+    Note that completion may either be a float (less than task weight) or a fraction (less than or equal to 1)
+    """
+    pass
+
+def modify_parent(task: str, completion: str):
+    """
+    Change completion of task.
+
+    Note that completion may either be a float (less than task weight) or a fraction (less than or equal to 1)
+    """
+    pass
+
+def modify_task(task: str, name: str, weight: str, completion: str, parent: str):
+    """
+    Modify all fields of task with non-empty values provided.
+    """
+    #Reset relevant error flags
+    reset_errors(m_task_errors)
+    #Check that task name was inputted
+    if not task:
+        m_invalid_name_old.config(text="Current name of task to be modified is required")
+        return
+    #Check that named task exists
+    if not core.task_exists(task):
+        m_invalid_name_old.config(text="Task with this name does not exist")
+        return
+
+    #Modify weight if new name was provided
+    if weight:
+        modify_weight(task, weight)
+
+    #Modify name if new name was provided
+    if completion:
+        modify_completion(task, completion)
+
+    #Modify name if new name was provided
+    if parent:
+        modify_parent(task, parent)
+
+    #Modify name if new name was provided. This happens last to avoid the question of whether we pass name or task as the first argument for all other functions
+    if name:
+        modify_name(task, name)
+    
+    #Reload tasklist to reflect changes
+    render_tasklist()
+
+Button(modify_task_options, text="Modify Task", command=lambda: modify_task(m_name_old.get().strip(), m_name.get().strip(), m_weight.get().strip(), m_comp.get().strip(), m_parent.get().strip())).grid(column=0, row=6, sticky= "w")
+
+#Remove task widgets
 remove_task_options = Frame(master)
-remove_task_options.grid(column=0,row=3, pady=20, sticky='w')
+remove_task_options.grid(column=0,row=4, pady=20, sticky='w')
 Label(remove_task_options, text="Remove Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 Label(remove_task_options, text="Task Name:").grid(column=0,row=1,sticky='w')
