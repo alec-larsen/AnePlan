@@ -271,7 +271,12 @@ def modify_weight(task: str, weight: str):
     """
     Change weight of task.
     """
-    pass
+    #Check that inputted weight is valid
+    if not util.is_strint(weight) or int(weight) < 0:
+        m_invalid_weight.config(text="Weight must be a non-negative integer")
+        return
+    #Change weights
+    core.set_weight(task,weight)
 
 def modify_completion(task: str, completion: str):
     """
@@ -316,11 +321,11 @@ def modify_task(task: str, name: str, weight: str, completion: str, parent: str)
     if weight:
         modify_weight(task, weight)
 
-    #Modify name if new name was provided
+    #Modify completion if new completion was provided. This must happen after possible weight change
     if completion:
         modify_completion(task, completion)
 
-    #Modify name if new name was provided
+    #Modify parent if new parent was provided
     if parent:
         modify_parent(task, parent)
 
