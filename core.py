@@ -27,6 +27,7 @@ def setup():
     cursor.executescript(setup_code)
     conn.commit()
 
+#Util functions
 def task_exists(name: str):
     """
     Check if task with given name exists.
@@ -65,22 +66,20 @@ def get_parent(name: str):
     WHERE name = ?
     """, (name,)).fetchone()[0]
 
-def in_cycle(task: str, parent: str):
+def get_completion(name: str):
     """
-    Check whether task with parent forms a cycle.
+    Given the name of a task, find its weight
+    
+    If a task with the given name does not exist, return -1
     """
-    #Traverse up task tree looking for a root task (parent is None)
-    while parent is not None:
-        parent = conn.execute("""
-        SELECT parent
-        FROM tasks
-        WHERE name = ?
-        """, (parent,)).fetchone()[0]
-        #If parent is the original task, we have found a cycle.
-        if parent == task:
-            return True
-
-    return False
+    if not task_exists(name):
+        return -1
+    
+    return conn.execute("""
+    SELECT completion
+    FROM tasks
+    WHERE name = ?
+    """, (name,)).fetchone()[0]
 
 def get_root_tasks():
     """
@@ -122,6 +121,103 @@ def get_leafs():
     """).fetchall()
     return [name[0] for name in tasks if name[0] not in [res[0] for res in results]]
 
+#Setter functions. All assume that arguments are well behaved (all ill-defined arguments are filtered out in gui input handlers)
+def set_name(task: str, name: str):
+    """
+    Rename task.
+    """
+    conn.execute("""
+    UPDATE tasks
+    SET name = ?
+    WHERE name = ?
+    """, (name,task))
+    conn.commit()
+
+def set_weight(task: str, weight: int):
+    """
+    Set task weight.
+
+    NOTE: Only leaf tasks keep their weight. All higher-level tasks have a weight equal to the sum of their children.
+    """
+    #Leaf tasks get the set weight
+    if not get_children(task):
+        conn.execute("""
+        UPDATE tasks
+        SET weight = ?
+        WHERE name = ?
+        """, (weight,task))
+        task = get_parent(task)
+    while task is not None:
+        #Any weight of a non-leaf task is the sum of its children's weights
+        agg_weight = sum([get_weight(child) for child in get_children(task)])
+        conn.execute("""
+        UPDATE tasks
+        SET weight = ?
+        WHERE name = ?
+        """, (agg_weight,task))
+        task = get_parent(task)
+    conn.commit()
+
+
+def set_parent(task: str, parent: str):
+    """
+    Set task parent.
+
+    Note that parents should not be set in such a way that a loop of parent-child relationships forms.
+    """
+    conn.execute("""
+    UPDATE tasks
+    SET parent = ?
+    WHERE name = ?
+    """, (parent,task))
+    conn.commit()
+
+def set_completion(task: str, completion: float):
+    """
+    Set task completion.
+    
+    NOTE: Only leaf tasks keep their set completion. All higher-level tasks have completion equal to the sum of their children.
+    """
+    #Leaf tasks get the set weight
+    if not get_children(task):
+        conn.execute("""
+        UPDATE tasks
+        SET completion = ?
+        WHERE name = ?
+        """, (completion,task))
+        task = get_parent(task)
+    while task is not None:
+        #Any completion of a non-leaf task is the sum of its children's completions
+        agg_completion = sum([get_completion(child) for child in get_children(task)])
+        conn.execute("""
+        UPDATE tasks
+        SET completion = ?
+        WHERE name = ?
+        """, (agg_completion,task))
+        task = get_parent(task)
+    conn.commit()
+
+#Check functions; ensure key properties of tasklist aren't violated
+def in_cycle(task: str, parent: str):
+    """
+    Check whether task with parent forms a cycle.
+    """
+    #Traverse up task tree looking for a root task (parent is None)
+    while parent is not None:
+        parent = conn.execute("""
+        SELECT parent
+        FROM tasks
+        WHERE name = ?
+        """, (parent,)).fetchone()[0]
+        #If parent is the original task, we have found a cycle.
+        if parent == task:
+            return True
+
+    return False
+
+#TODO (after implementing task prereqs): implement check function to catch cyclical prereq paths
+
+#Tasklist manipulation/rendering functions
 def task_str(name: str):
     """
     Build string representation of given task with name.
