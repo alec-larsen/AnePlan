@@ -264,6 +264,7 @@ def modify_name(task: str, name: str):
     #Check that name is not a strint
     elif util.is_strint(name):
         m_invalid_name.config(text="Task name should not be an integer")
+        return
     core.set_name(task, name)
 
 def modify_weight(task: str, weight: str):
@@ -280,13 +281,21 @@ def modify_completion(task: str, completion: str):
     """
     pass
 
-def modify_parent(task: str, completion: str):
+def modify_parent(task: str, parent: str):
     """
-    Change completion of task.
+    Change parent of task.
 
-    Note that completion may either be a float (less than task weight) or a fraction (less than or equal to 1)
+    Note that parent-children relations are NOT permitted to be cyclical
     """
-    pass
+    #Check that parent exists
+    if not core.task_exists(parent):
+        m_invalid_parent.config(text="Task with this name does not exist")
+        return
+    #Check that reassignment of parent does not form a closed cycle
+    if core.in_cycle(task,parent):
+        m_invalid_parent.config(text="This reassignment forms a cycle of parent-children relations")
+        return
+    core.set_parent(task, parent)
 
 def modify_task(task: str, name: str, weight: str, completion: str, parent: str):
     """
