@@ -158,20 +158,6 @@ def set_weight(task: str, weight: int):
         task = get_parent(task)
     conn.commit()
 
-
-def set_parent(task: str, parent: str):
-    """
-    Set task parent.
-
-    Note that parents should not be set in such a way that a loop of parent-child relationships forms.
-    """
-    conn.execute("""
-    UPDATE tasks
-    SET parent = ?
-    WHERE name = ?
-    """, (parent,task))
-    conn.commit()
-
 def set_completion(task: str, completion: float):
     """
     Set task completion.
@@ -196,6 +182,25 @@ def set_completion(task: str, completion: float):
         """, (agg_completion,task))
         task = get_parent(task)
     conn.commit()
+
+def set_parent(task: str, parent: str):
+    """
+    Set task parent.
+
+    Note that parents should not be set in such a way that a loop of parent-child relationships forms. Input handlers in gui protect from these cases.
+    """
+    old_parent = get_parent(task)
+    conn.execute("""
+    UPDATE tasks
+    SET parent = ?
+    WHERE name = ?
+    """, (parent,task))
+    conn.commit()
+    #This parent reassignment changes the weight and completion of both the old and new parent
+    set_weight(parent,0)
+    set_weight(old_parent,0)
+    set_completion(parent,0)
+    set_completion(old_parent,0)
 
 #Check functions; ensure key properties of tasklist aren't violated
 def in_cycle(task: str, parent: str):
