@@ -190,8 +190,11 @@ def add_task(name: str, weight: str, parent: str):
     if not parent:
         parent = None
     if valid_task:
+        #Add task
         core.add_task(name, int(weight), 0, parent)
-        #After adding, we need to re-render the tasklist to see changes
+        #Update weights of all higher-level tasks.
+        core.set_weight(parent,0)
+        #Re-render the tasklist to see changes
         render_tasklist()
 
 Button(add_task_options, text="Add Task", command=lambda: add_task(name.get().strip(),weight.get(),parent.get().strip())).grid(column=0, row=4, sticky= "w")
@@ -228,6 +231,8 @@ def remove_task(name: str):
             removal_message += f"\n1 task ({children[0]}) will be reassigned as " + ("a root task." if not parent else f"a child of task {parent}.")
         if mb.askokcancel(f"Remove {name}?", removal_message):
             core.remove_task(name)
+            #Update parent weights. 0 as weight argument sets parent weight to 0 if previously remvoed task was its last child - NOTE: may add a config option to allow users to opt between this and parent inheriting last child's weight
+            core.set_weight(parent,0)
             #After adding, we need to re-render the tasklist to see changes
             render_tasklist()
 
