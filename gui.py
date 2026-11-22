@@ -8,6 +8,7 @@ import util
 
 STATE = {
     "render_mode": "L",
+    "safety": True
 }
 
 #Initialize control panel
@@ -44,7 +45,10 @@ def task_str(id: int):
     FROM tasks
     WHERE id = ?
     """, (id,)).fetchone()[1:]
-    return[f"{name}", f"{completed:.2f}/{weight}", f"{completed/weight*100:.2f}%"]
+    if weight == 0:
+        return[f"{name}", f"{completed:.2f}/{weight}", f"-%"]
+    else:
+        return[f"{name}", f"{completed:.2f}/{weight}", f"{completed/weight*100:.2f}%"]
 
 def clear_window(window):
     for w in window.winfo_children():
@@ -176,8 +180,8 @@ def add_task(name: str, weight: str, parent: str):
     elif core.task_exists(name):
         invalid_name.config(text="Task with this name already exists")
         valid_task = False
-    if not util.is_strint(weight) or int(weight) <= 0:
-        invalid_weight.config(text="Weight must be a positive integer")
+    if not util.is_strint(weight) or int(weight) < 0:
+        invalid_weight.config(text="Weight must be non-negative")
         valid_task = False
     if not core.task_exists(parent) and parent:
         invalid_parent.config(text="Task with this name does not exist")

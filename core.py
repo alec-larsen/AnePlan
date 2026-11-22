@@ -185,7 +185,10 @@ def task_str(id: int):
     FROM tasks
     WHERE id = ?
     """, (id,)).fetchone()[1:]
-    return(f"{name} - {completed:.2f}/{weight} ({completed/weight*100:.2f}%)")
+    if weight == 0:
+        return(f"{name} - {completed:.2f}/{weight} (-%)")
+    else:
+        return(f"{name} - {completed:.2f}/{weight} ({completed/weight*100:.2f}%)")
 
 def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None, prerequesites: list[int] = []):
     """
