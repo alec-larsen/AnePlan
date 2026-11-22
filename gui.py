@@ -290,7 +290,30 @@ def modify_completion(task: str, completion: str):
 
     Note that completion may either be a float (less than task weight) or a fraction (less than or equal to 1)
     """
-    pass
+    #If completion is recognizable as a float, it should be an input in terms of task weight units completed
+    if util.is_strfloat(completion):
+        completion = float(completion)
+    #If completion contains a '/', further check to confirm it represents a valid fraction
+    elif '/' in completion:
+        #Split into components separated by 'division' symbol
+        numbers = completion.split('/')
+        #If input is recognized as a fraction, it should be a proportion of the total task weight completed.
+        if len(numbers) == 2 and util.is_strint(numbers[0]) and util.is_strint(numbers[1]):
+            completion = int(numbers[0])/int(numbers[1]) * core.get_weight(task)
+        #Otherwise the input is invalid
+        else:
+            m_invalid_comp.config(text="This input is not recognizable as a fraction or float")
+            return
+    #A completion input recognized as neither format is invalid.
+    else:
+        m_invalid_comp.config(text="This input is not recognizable as a fraction or float")
+        return
+    #Check that completion is less than the task weight
+    if completion > core.get_weight(task):
+        m_invalid_comp.config(text="Completion should not exceed task weight")
+        return
+    #If all checks pass, update completion
+    core.set_completion(task,completion)
 
 def modify_parent(task: str, parent: str):
     """
