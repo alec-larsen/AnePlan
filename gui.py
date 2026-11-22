@@ -254,7 +254,17 @@ def modify_name(task: str, name: str):
     """
     Change name of task.
     """
-    pass
+    #Check that new name is not used by any existing task
+    if core.task_exists(name):
+        if name == task:
+            m_invalid_name.config(text="Task is already named this")
+        else:
+            m_invalid_name.config(text="Task with this name already exists")
+        return
+    #Check that name is not a strint
+    elif util.is_strint(name):
+        m_invalid_name.config(text="Task name should not be an integer")
+    core.set_name(task, name)
 
 def modify_weight(task: str, weight: str):
     """
