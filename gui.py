@@ -281,6 +281,10 @@ def modify_weight(task: str, weight: str):
     if not util.is_strint(weight) or int(weight) < 0:
         m_invalid_weight.config(text="Weight must be a non-negative integer")
         return
+    #
+    if core.get_children(task):
+        m_invalid_name_old.config(text="This task has children, which fix its weight")
+        return
     #Change weights
     core.set_weight(task,weight)
 
@@ -311,6 +315,9 @@ def modify_completion(task: str, completion: str):
     #Check that completion is less than the task weight
     if completion > core.get_weight(task):
         m_invalid_comp.config(text="Completion should not exceed task weight")
+        return
+    if core.get_children(task):
+        m_invalid_name_old.config(text="This task has children, which fix its completion")
         return
     #If all checks pass, update completion
     core.set_completion(task,completion)
