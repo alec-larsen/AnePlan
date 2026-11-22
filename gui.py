@@ -142,24 +142,24 @@ add_task_options.grid(column=0,row=2, pady=20, sticky='w')
 Label(add_task_options, text="Add New Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 Label(add_task_options, text="Task Name:").grid(column=0,row=1,sticky='w')
-name = Entry(add_task_options)
-name.grid(column=1,row=1, sticky='w', padx=20)
-invalid_name = Label(add_task_options,text="")
-invalid_name.grid(column=2,row=1, sticky='w', padx=20)
+a_name = Entry(add_task_options)
+a_name.grid(column=1,row=1, sticky='w', padx=20)
+a_invalid_name = Label(add_task_options,text="")
+a_invalid_name.grid(column=2,row=1, sticky='w', padx=20)
 
 Label(add_task_options, text="Weight:").grid(column=0,row=2,sticky='w')
-weight = Entry(add_task_options)
-weight.grid(column=1,row=2, sticky='w', padx=20)
-invalid_weight= Label(add_task_options,text="")
-invalid_weight.grid(column=2,row=2, sticky='w', padx=20)
+a_weight = Entry(add_task_options)
+a_weight.grid(column=1,row=2, sticky='w', padx=20)
+a_invalid_weight= Label(add_task_options,text="")
+a_invalid_weight.grid(column=2,row=2, sticky='w', padx=20)
 
 Label(add_task_options, text="Parent Task:").grid(column=0,row=3,sticky='w')
-parent = Entry(add_task_options)
-parent.grid(column=1,row=3, sticky='w', padx=20)
-invalid_parent = Label(add_task_options,text="")
-invalid_parent.grid(column=2,row=3, sticky='w', padx=20)
+a_parent = Entry(add_task_options)
+a_parent.grid(column=1,row=3, sticky='w', padx=20)
+a_invalid_parent = Label(add_task_options,text="")
+a_invalid_parent.grid(column=2,row=3, sticky='w', padx=20)
 
-add_task_flags = [invalid_name, invalid_weight, invalid_parent]
+add_task_flags = [a_invalid_name, a_invalid_weight, a_invalid_parent]
 
 def reset_errors(flags: list[Label]):
     """
@@ -172,19 +172,19 @@ def add_task(name: str, weight: str, parent: str):
     reset_errors(add_task_flags)
     valid_task = True
     if not name:
-        invalid_name.config(text="Task name must be non-empty")
+        a_invalid_name.config(text="Task name must be non-empty")
         valid_task = False
     elif util.is_strint(name):
-        invalid_name.config(text="Task name cannot be an integer")
+        a_invalid_name.config(text="Task name cannot be an integer")
         valid_task = False
     elif core.task_exists(name):
-        invalid_name.config(text="Task with this name already exists")
+        a_invalid_name.config(text="Task with this name already exists")
         valid_task = False
     if not util.is_strint(weight) or int(weight) < 0:
-        invalid_weight.config(text="Weight must be non-negative")
+        a_invalid_weight.config(text="Weight must be non-negative")
         valid_task = False
     if not core.task_exists(parent) and parent:
-        invalid_parent.config(text="Task with this name does not exist")
+        a_invalid_parent.config(text="Task with this name does not exist")
         valid_task = False
     #Empty string (meaning no entry) implies no task parent
     if not parent:
@@ -197,29 +197,29 @@ def add_task(name: str, weight: str, parent: str):
         #Re-render the tasklist to see changes
         render_tasklist()
 
-Button(add_task_options, text="Add Task", command=lambda: add_task(name.get().strip(),weight.get(),parent.get().strip())).grid(column=0, row=4, sticky= "w")
+Button(add_task_options, text="Add Task", command=lambda: add_task(a_name.get().strip(),a_weight.get(),a_parent.get().strip())).grid(column=0, row=4, sticky= "w")
 
 remove_task_options = Frame(master)
 remove_task_options.grid(column=0,row=3, pady=20, sticky='w')
 Label(remove_task_options, text="Remove Task", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
 
 Label(remove_task_options, text="Task Name:").grid(column=0,row=1,sticky='w')
-name_r = Entry(remove_task_options)
-name_r.grid(column=1,row=1, sticky='w', padx=20)
-invalid_name_r = Label(remove_task_options,text="")
-invalid_name_r.grid(column=2,row=1, sticky='w', padx=20)
+r_name = Entry(remove_task_options)
+r_name.grid(column=1,row=1, sticky='w', padx=20)
+r_invalid_name = Label(remove_task_options,text="")
+r_invalid_name.grid(column=2,row=1, sticky='w', padx=20)
 
 def remove_task(name: str):
-    reset_errors([invalid_name_r])
+    reset_errors([r_invalid_name])
     valid_task = True
     if not name:
-        invalid_name_r.config(text="A task name is required")
+        r_invalid_name.config(text="A task name is required")
         valid_task = False
     elif util.is_strint(name):
-        invalid_name_r.config(text="Task name should not be an integer")
+        r_invalid_name.config(text="Task name should not be an integer")
         valid_task = False
     elif not core.task_exists(name):
-        invalid_name_r.config(text="Task with this name does not exist")
+        r_invalid_name.config(text="Task with this name does not exist")
         valid_task = False
     if valid_task:
         children = [child for child in core.get_children(name)]
@@ -236,7 +236,7 @@ def remove_task(name: str):
             #After adding, we need to re-render the tasklist to see changes
             render_tasklist()
 
-Button(remove_task_options, text="Remove Task", command=lambda: remove_task(name_r.get().strip())).grid(column=0, row=2, sticky= "w")
+Button(remove_task_options, text="Remove Task", command=lambda: remove_task(r_name.get().strip())).grid(column=0, row=2, sticky= "w")
 
 #Attempting to close either window should trigger both to close
 master.protocol("WM_DELETE_WINDOW", shutdown)
