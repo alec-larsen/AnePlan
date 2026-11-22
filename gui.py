@@ -7,8 +7,8 @@ import core
 import util
 
 STATE = {
-    "render_mode": "L",
-    "safety": True
+    "render_mode": "L", #Current mode tasklist renders in (Leaf-Only, Root-Only, Hierarchy)
+    "head_task": None #Task whose subtasks are rendered in hierarchy view. None renders all tasks.
 }
 
 #Initialize control panel
@@ -96,11 +96,18 @@ def render_tasklist_h(task: int = None, depth: int = 0, row: int = 0, task_tree 
     """
     #Initialize frame widgets in the first pass only.
     if depth == 0:
+        #Change head task if this function was called from 'Change View' button.
+        STATE["head_task"] = task
         clear_window(tasks)
         #If viewing task hierarchy, ensure mode is set to H for future calls to render_tasklist()
         STATE["render_mode"] = "H"
         #Print appropriate table heading
-        Label(tasks,text="ALL TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        if task is None:
+            Label(tasks,text="ALL TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        elif not core.task_exists(task):
+            Label(tasks,text=f"Task '{task}' not found",font=FONTS["head"]).grid(column=0,row=0)
+        else:
+            Label(tasks,text=task.upper(),font=FONTS["head"]).grid(column=0,row=0)
         task_tree = Frame(tasks)
         task_tree.grid(column=0,row=1)
     #Get all children of current task
@@ -117,7 +124,7 @@ def render_tasklist():
     elif STATE["render_mode"] == "R":
         render_tasklist_lr("R")
     else:
-        render_tasklist_h()
+        render_tasklist_h(task=STATE["head_task"])
 
 def clear_tasklist():
     if mb.askokcancel("Clear all tasks?","This action will clear ALL tasks from the tasklist.\nAre you sure you want to do this?"):
@@ -129,13 +136,18 @@ Label(master, text="Options", font=FONTS["subhead"]).grid(column=0,row=0,sticky=
 render_options = Frame(master)
 render_options.grid(column=0,row=1,sticky="w")
 
-Label(render_options, text="Tasklist Quickview:").grid(column = 0, row = 0)
+Label(render_options, text="Tasklist Quickview:").grid(column = 0, row = 0, sticky='w')
 Button(render_options, text="Leaf-Only Mode", command=lambda: render_tasklist_lr("L")).grid(column = 1, row = 0)
 Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist_lr("R")).grid(column = 2, row = 0)
 Button(render_options, text="All Tasks", command=render_tasklist_h).grid(column = 3, row = 0)
 
-Label(render_options, text="Clear All:").grid(column = 0, row = 1, sticky='w')
-Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 1, sticky='w')
+Label(render_options, text="View Subtasks Of:").grid(column = 0, row = 1, sticky='w')
+v_name = Entry(render_options)
+v_name.grid(column=1,row=1, sticky='w')
+Button(render_options, text="Change View", command=lambda: render_tasklist_h(task=v_name.get())).grid(column = 2, row = 1)
+
+Label(render_options, text="Clear All:").grid(column = 0, row = 2, sticky='w')
+Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 2, sticky='w')
 
 add_task_options = Frame(master)
 add_task_options.grid(column=0,row=2, pady=20, sticky='w')
