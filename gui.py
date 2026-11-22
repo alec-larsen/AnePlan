@@ -184,19 +184,25 @@ def reset_errors(flags: list[Label]):
 
 def add_task(name: str, weight: str, parent: str):
     reset_errors(add_task_flags)
+    #This flag (as opposed to return statements after a single condition fails) ensures all error messages render in the GUI
     valid_task = True
+    #Check task name is non-empty
     if not name:
         a_invalid_name.config(text="Task name must be non-empty")
         valid_task = False
+    #Check task name is not strint
     elif util.is_strint(name):
         a_invalid_name.config(text="Task name cannot be an integer")
         valid_task = False
+    #Check that task name is not already in use
     elif core.task_exists(name):
         a_invalid_name.config(text="Task with this name already exists")
         valid_task = False
+    #Check inputted weight is valid
     if not util.is_strint(weight) or int(weight) < 0:
         a_invalid_weight.config(text="Weight must be non-negative")
         valid_task = False
+    #Check inputted parent task exists or no parent was given
     if not core.task_exists(parent) and parent:
         a_invalid_parent.config(text="Task with this name does not exist")
         valid_task = False
