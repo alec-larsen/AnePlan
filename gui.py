@@ -33,18 +33,18 @@ def shutdown():
         tasks.destroy()
         master.destroy()
 
-def task_str(id: int):
+def task_str(name: int):
     """
-    Build string representation of given task with id.
+    Build string representation of given task with name.
 
     Note that all float values are rounded to two decimal places.
     """
-    #Get task by id and unpack resultant tuple to obtain remaining task details.
-    parent, name, weight, completed = core.conn.execute("""
+    #Get task by name and unpack resultant tuple to obtain remaining task details.
+    parent, weight, completed = core.conn.execute("""
     SELECT *
     FROM tasks
-    WHERE id = ?
-    """, (id,)).fetchone()[1:]
+    WHERE name = ?
+    """, (name,)).fetchone()[1:]
     if weight == 0:
         return[f"{name}", f"{completed:.2f}/{weight}", f"-%"]
     else:
@@ -66,14 +66,14 @@ def render_tasklist_lr(mode: str):
         #If viewing leaf tasks, ensure mode is set to L for future calls to render_tasklist()
         STATE["render_mode"] = "L"
         #Get all leaf tasks
-        task_ids = core.get_leafs()
+        task_names = core.get_leafs()
         #Print appropriate table heading
         Label(tasks,text="COMPONENT TASKS",font=FONTS["head"]).grid(column=0,row=0)
     else:
         #If viewing root tasks, ensure mode is set to R for future calls to render_tasklist()
         STATE["render_mode"] = "R"
         #Get all root tasks
-        task_ids = core.get_root_tasks()
+        task_names = core.get_root_tasks()
         #Print appropriate table heading
         Label(tasks,text="ROOT TASKS",font=FONTS["head"]).grid(column=0,row=0)
     #Place tasklist in its own frame. This ensures the table heading rendered previously is centered
@@ -84,8 +84,8 @@ def render_tasklist_lr(mode: str):
     Label(task_table, text="Progress").grid(column = 1, row = 0, sticky = 'e', padx = 20)
     Label(task_table, text="Percent Completed").grid(column = 2, row = 0, sticky = 'e', padx = 20)
     #Render rows of task table from fetched tasks
-    for index, id in enumerate(task_ids,1):
-        task_pieces = task_str(id)
+    for index, n in enumerate(task_names,1):
+        task_pieces = task_str(n)
         Label(task_table, text=task_pieces[0]).grid(column = 0, row = index, sticky = 'w')
         Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
         Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
@@ -189,8 +189,6 @@ def add_task(name: str, weight: str, parent: str):
     #Empty string (meaning no entry) implies no task parent
     if not parent:
         parent = None
-    else:
-        parent = core.fetch_task_id(parent)
     if valid_task:
         core.add_task(name, int(weight), 0, parent)
         #After adding, we need to re-render the tasklist to see changes
@@ -222,14 +220,12 @@ def remove_task(name: str):
         valid_task = False
     if valid_task:
         children = [child for child in core.get_children(name)]
-        if children:
-            children = [core.fetch_task_name(child) for child in children]
-        parent = core.fetch_task_parent(name)
+        parent = core.get_parent(name)
         removal_message = f"Remove {name}?"
         if len(children) > 1:
-            removal_message += f"\n{len(children)} tasks ({', '.join(children)}) will be reassigned as " + ("root tasks." if not core.fetch_task_parent(name) else f"children of task {parent}.")
+            removal_message += f"\n{len(children)} tasks ({', '.join(children)}) will be reassigned as " + ("root tasks." if not parent else f"children of task {parent}.")
         elif len(children) == 1:
-            removal_message += f"\n1 task ({children[0]}) will be reassigned as " + ("a root task." if not core.fetch_task_parent(name) else f"a child of task {parent}.")
+            removal_message += f"\n1 task ({children[0]}) will be reassigned as " + ("a root task." if not parent else f"a child of task {parent}.")
         if mb.askokcancel(f"Remove {name}?", removal_message):
             core.remove_task(name)
             #After adding, we need to re-render the tasklist to see changes
@@ -240,8 +236,3 @@ Button(remove_task_options, text="Remove Task", command=lambda: remove_task(name
 #Attempting to close either window should trigger both to close
 master.protocol("WM_DELETE_WINDOW", shutdown)
 tasks.protocol("WM_DELETE_WINDOW", shutdown)
-
-if __name__ == "__main__":
-    #Render the tasklist at runtime
-    render_tasklist()
-    master.mainloop()

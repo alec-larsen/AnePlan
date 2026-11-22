@@ -27,34 +27,21 @@ def setup():
     cursor.executescript(setup_code)
     conn.commit()
 
-def task_exists(task: int|str):
+#Util functions
+def task_exists(name: str):
     """
-    Check if task with given id exists.
-
-    Arguments:
-    id: task identifier to search for; id if int, else task name
+    Check if task with given name exists.
     """
     cursor = conn.cursor()
-    #If id is strint, it refers to an id; cast to int
-    if util.is_strint(task):
-        task = int(task)
-    #If identifier is integer
-    if isinstance(task, int):
-        return cursor.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE id = ?
-        """, (task,)).fetchone()[0] > 0
-    else:
-        return cursor.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE name = ?
-        """, (task,)).fetchone()[0] > 0
+    return cursor.execute("""
+    SELECT COUNT(*)
+    FROM tasks
+    WHERE name = ?
+    """, (name,)).fetchone()[0] > 0
 
-def fetch_task_id(name: str):
+def get_weight(name: str):
     """
-    Given the name of a task, find its integer id
+    Given the name of a task, find its weight
 
     If a task with the given name does not exist, return -1
     """
@@ -62,62 +49,165 @@ def fetch_task_id(name: str):
         return -1
 
     return conn.execute("""
-    SELECT id
+    SELECT weight
     FROM tasks
     WHERE name = ?
     """, (name,)).fetchone()[0]
 
-def fetch_task_name(id: int):
+def get_parent(name: str):
     """
-    Given the id of a task, find its name
-
-    If a task with the given id does not exist, return -1
+    Given the name of a task, find its parent
     """
-    if not task_exists(id):
+    if not task_exists(name):
         return -1
-
     return conn.execute("""
+    SELECT parent
+    FROM tasks
+    WHERE name = ?
+    """, (name,)).fetchone()[0]
+
+def get_completion(name: str):
+    """
+    Given the name of a task, find its weight
+    
+    If a task with the given name does not exist, return -1
+    """
+    if not task_exists(name):
+        return -1
+    
+    return conn.execute("""
+    SELECT completion
+    FROM tasks
+    WHERE name = ?
+    """, (name,)).fetchone()[0]
+
+def get_root_tasks():
+    """
+    Get names of root tasks (tasks with no parents)
+    """
+    results = conn.execute("""
     SELECT name
     FROM tasks
-    WHERE id = ?
-    """, (id,)).fetchone()[0]
+    WHERE parent is NULL
+    """).fetchall()
+    return [res[0] for res in results]
 
-def fetch_task_parent(id: int|str, give_name = True):
+def get_children(task: str|None):
     """
-    Given the id or name of a task, find its name
+    Get names of all tasks whose parent is specified by the name given.
 
-    If a task with the given id does not exist, return -1
+    If an empty task (i.e. None) is given, return all root tasks.
     """
-    if not task_exists(id):
-        return -1
-    if isinstance(id, int):
-        parent = conn.execute("""
-        SELECT parent_id
+    if task is None:
+        return get_root_tasks()
+    results = conn.execute("""
+        SELECT name
         FROM tasks
-        WHERE id = ?
-        """, (id,)).fetchone()[0]
-    else:
-        parent = conn.execute("""
-        SELECT parent_id
+        WHERE parent = ?
+        """, (task,)).fetchall()
+    return [res[0] for res in results]
+
+def get_leafs():
+    """
+    Get names of leaf tasks (tasks with no children)
+    """
+    results = conn.execute("""
+        SELECT parent
         FROM tasks
+        """).fetchall()
+    tasks = conn.execute("""
+        SELECT name
+        FROM tasks
+    """).fetchall()
+    return [name[0] for name in tasks if name[0] not in [res[0] for res in results]]
+
+#Setter functions. All assume that arguments are well behaved (all ill-defined arguments are filtered out in gui input handlers)
+def set_name(task: str, name: str):
+    """
+    Rename task.
+    """
+    conn.execute("""
+    UPDATE tasks
+    SET name = ?
+    WHERE name = ?
+    """, (name,task))
+    conn.commit()
+
+def set_weight(task: str, weight: int):
+    """
+    Set task weight.
+
+    NOTE: Only leaf tasks keep their weight. All higher-level tasks have a weight equal to the sum of their children.
+    """
+    #Leaf tasks get the set weight
+    if not get_children(task):
+        conn.execute("""
+        UPDATE tasks
+        SET weight = ?
         WHERE name = ?
-        """, (id,)).fetchone()[0]
+        """, (weight,task))
+        task = get_parent(task)
+    while task is not None:
+        #Any weight of a non-leaf task is the sum of its children's weights
+        agg_weight = sum([get_weight(child) for child in get_children(task)])
+        conn.execute("""
+        UPDATE tasks
+        SET weight = ?
+        WHERE name = ?
+        """, (agg_weight,task))
+        task = get_parent(task)
+    conn.commit()
 
-    if give_name and parent:
-        return fetch_task_name(parent)
-    else:
-        return parent
 
-def in_cycle(task: int, parent: int):
+def set_parent(task: str, parent: str):
+    """
+    Set task parent.
+
+    Note that parents should not be set in such a way that a loop of parent-child relationships forms.
+    """
+    conn.execute("""
+    UPDATE tasks
+    SET parent = ?
+    WHERE name = ?
+    """, (parent,task))
+    conn.commit()
+
+def set_completion(task: str, completion: float):
+    """
+    Set task completion.
+    
+    NOTE: Only leaf tasks keep their set completion. All higher-level tasks have completion equal to the sum of their children.
+    """
+    #Leaf tasks get the set weight
+    if not get_children(task):
+        conn.execute("""
+        UPDATE tasks
+        SET completion = ?
+        WHERE name = ?
+        """, (completion,task))
+        task = get_parent(task)
+    while task is not None:
+        #Any completion of a non-leaf task is the sum of its children's completions
+        agg_completion = sum([get_completion(child) for child in get_children(task)])
+        conn.execute("""
+        UPDATE tasks
+        SET completion = ?
+        WHERE name = ?
+        """, (agg_completion,task))
+        task = get_parent(task)
+    conn.commit()
+
+#Check functions; ensure key properties of tasklist aren't violated
+def in_cycle(task: str, parent: str):
     """
     Check whether task with parent forms a cycle.
     """
     #Traverse up task tree looking for a root task (parent is None)
     while parent is not None:
         parent = conn.execute("""
-        SELECT parent_id
+        SELECT parent
         FROM tasks
-        WHERE id = ?
+        WHERE name = ?
         """, (parent,)).fetchone()[0]
         #If parent is the original task, we have found a cycle.
         if parent == task:
@@ -125,72 +215,27 @@ def in_cycle(task: int, parent: int):
 
     return False
 
-def get_root_tasks():
-    """
-    Get ids of root tasks (tasks with no parents)
-    """
-    results = conn.execute("""
-    SELECT id
-    FROM tasks
-    WHERE parent_id is NULL
-    """).fetchall()
-    return [res[0] for res in results]
+#TODO (after implementing task prereqs): implement check function to catch cyclical prereq paths
 
-def get_children(task: int|str|None):
+#Tasklist manipulation/rendering functions
+def task_str(name: str):
     """
-    Get ids of all tasks whose parent is specified by the id or name given.
-
-    If an empty task (i.e. None) is given, return all root tasks.
-    """
-    if task is None:
-        return get_root_tasks()
-    #If task string is supplied, we cast to int first in order to search
-    if isinstance(task, str):
-        #If the user inputted a task id, it will be string
-        if util.is_strint(task):
-            task = int(task)
-        #If the input was not a strint, it should be the name of a task. We fetch its corresponding task_id
-        else:
-            task = fetch_task_id(task)
-    results = conn.execute("""
-        SELECT id
-        FROM tasks
-        WHERE parent_id = ?
-        """, (task,)).fetchall()
-    return [res[0] for res in results]
-
-def get_leafs():
-    """
-    Get ids of leaf tasks (tasks with no children)
-    """
-    results = conn.execute("""
-        SELECT parent_id
-        FROM tasks
-        """).fetchall()
-    task_ids = conn.execute("""
-        SELECT id
-        FROM tasks
-    """).fetchall()
-    return [id[0] for id in task_ids if id[0] not in [res[0] for res in results]]
-
-def task_str(id: int):
-    """
-    Build string representation of given task with id.
+    Build string representation of given task with name.
 
     Note that all float values are rounded to two decimal places.
     """
-    #Get task by id and unpack resultant tuple to obtain remaining task details.
-    parent, name, weight, completed = conn.execute("""
+    #Get task by name and unpack resultant tuple to obtain remaining task details.
+    parent, weight, completed = conn.execute("""
     SELECT *
     FROM tasks
-    WHERE id = ?
-    """, (id,)).fetchone()[1:]
+    WHERE name = ?
+    """, (name,)).fetchone()[1:]
     if weight == 0:
         return(f"{name} - {completed:.2f}/{weight} (-%)")
     else:
         return(f"{name} - {completed:.2f}/{weight} ({completed/weight*100:.2f}%)")
 
-def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None, prerequesites: list[int] = []):
+def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int = None):
     """
     Add task to database.
 
@@ -198,57 +243,46 @@ def add_task(task_name: str, weight: int = 1, completion: float = 0, parent: int
     task_name (str) - Name of task. Must be unique
     weight (int) - Weight of task. Must be a positive value. Defaults to 1.
     completion (float) - Weight units of task completed; defaults to 0.
-    parent (int) - integer id of parent task. None if task has no parent
-    prerequesites (list[int]) - list of integer ids for all prerequesite tasks (tasks that must be completed before this one can be)
+    parent (int) - name of parent task. None if task has no parent
     """
     if not isinstance(weight, int):
         print("Task could not be added. Assigned weight must be an integer.")
         return
-    if not isinstance(weight, (int, float)):
+    if not isinstance(completion, (int, float)):
             print("Task could not be added. Completion must be an integer or float.")
             return
     if completion > weight:
         print("Task could not be added. Completion cannot exceed assigned task weight.")
         return
-    conn = sqlite3.connect(_ROOT_DIRECTORY / "tasks.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-    INSERT INTO tasks (parent_id, name, weight, completion)
+    conn.execute("""
+    INSERT INTO tasks (name, parent, weight, completion)
     VALUES (?,?,?,?)
-    """, (parent, task_name, weight, completion))
+    """, (task_name, parent, weight, completion))
     conn.commit()
 
-def remove_task(task: str|int):
+def remove_task(task: str):
     """
-    Remove task by name or id.
+    Remove task by name.
 
     All children of task become children of deleted task's parent.
     """
-    #If task string is supplied, we cast to int first in order to search
-    if isinstance(task, str):
-        #If the user inputted a task id, it will be string
-        if util.is_strint(task):
-            task = int(task)
-        #If the input was not a strint, it should be the name of a task. We fetch its corresponding task_id
-        else:
-            task = fetch_task_id(task)
     #Get parent of task to be deleted.
     parent = conn.execute("""
-    SELECT parent_id
+    SELECT parent
     FROM tasks
-    WHERE id = ?
+    WHERE name = ?
     """, (task,)).fetchone()[0]
     #Any children of task become children of parent.
     conn.execute("""
     UPDATE tasks
-    SET parent_id = ?
-    WHERE parent_id = ?
+    SET parent = ?
+    WHERE parent = ?
     """, (parent,task))
     #Remove task from database
     conn.execute("""
     DELETE
     FROM tasks
-    WHERE id = ?
+    WHERE name = ?
     """, (task,))
     conn.commit()
 
