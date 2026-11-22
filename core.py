@@ -67,7 +67,7 @@ def fetch_task_id(name: str):
     WHERE name = ?
     """, (name,)).fetchone()[0]
 
-def fetch_task_name(id: str):
+def fetch_task_name(id: int):
     """
     Given the id of a task, find its name
 
@@ -82,20 +82,26 @@ def fetch_task_name(id: str):
     WHERE id = ?
     """, (id,)).fetchone()[0]
 
-def fetch_task_parent(id: int, give_name = True):
+def fetch_task_parent(id: int|str, give_name = True):
     """
-    Given the id of a task, find its name
+    Given the id or name of a task, find its name
 
     If a task with the given id does not exist, return -1
     """
     if not task_exists(id):
         return -1
-
-    parent = conn.execute("""
-    SELECT parent_id
-    FROM tasks
-    WHERE id = ?
-    """, (id,)).fetchone()[0]
+    if isinstance(id, int):
+        parent = conn.execute("""
+        SELECT parent_id
+        FROM tasks
+        WHERE id = ?
+        """, (id,)).fetchone()[0]
+    else:
+        parent = conn.execute("""
+        SELECT parent_id
+        FROM tasks
+        WHERE name = ?
+        """, (id,)).fetchone()[0]
 
     if give_name and parent:
         return fetch_task_name(parent)
