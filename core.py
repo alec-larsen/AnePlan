@@ -82,6 +82,26 @@ def fetch_task_name(id: str):
     WHERE id = ?
     """, (id,)).fetchone()[0]
 
+def fetch_task_parent(id: int, give_name = True):
+    """
+    Given the id of a task, find its name
+
+    If a task with the given id does not exist, return -1
+    """
+    if not task_exists(id):
+        return -1
+
+    parent = conn.execute("""
+    SELECT parent_id
+    FROM tasks
+    WHERE id = ?
+    """, (id,)).fetchone()[0]
+
+    if give_name and parent:
+        return fetch_task_name(parent)
+    else:
+        return parent
+
 def in_cycle(task: int, parent: int):
     """
     Check whether task with parent forms a cycle.
