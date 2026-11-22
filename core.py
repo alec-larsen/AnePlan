@@ -202,6 +202,9 @@ def in_cycle(task: str, parent: str):
     """
     Check whether task with parent forms a cycle.
     """
+    #Task being its own parent is a 1-cycle
+    if task == parent:
+        return True
     #Traverse up task tree looking for a root task (parent is None)
     while parent is not None:
         parent = conn.execute("""
