@@ -14,13 +14,31 @@ STATE = {
 #Initialize control panel
 master = Tk()
 master.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
-master.geometry("600x600")
+master.geometry("530x600")
 master.title("AneTask Control Panel")
 
 tasks = Toplevel()
 tasks.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
-tasks.geometry("400x400")
+tasks.geometry("500x800")
 tasks.title("AneTasklist")
+
+#Add canvas, which we can use to attach scrollbar.
+canvas = Canvas(tasks,width=500,height=800)
+canvas.pack(anchor="nw",side="left",fill="both")
+
+#Add scrollbar; pack arguments keep bar on right side
+scroll_controls = Scrollbar(tasks,orient="vertical",command=canvas.yview)
+scroll_controls.pack(side="right",fill="y")
+
+canvas.configure(yscrollcommand=scroll_controls.set)
+
+#Build frame that will contain all main content of tasklist
+tasks_content = Frame(canvas)
+#Attach frame to canvas
+canvas.create_window((0,0),window=tasks_content,anchor="nw")
+#Bind scrollbar movement and mousewheel scrolling to canvas
+tasks_content.bind("<Configure>", lambda _: canvas.configure(scrollregion=canvas.bbox("all")))
+tasks_content.bind("<MouseWheel>", lambda _: canvas.configure(scrollregion=canvas.bbox("all")))
 
 FONTS = {
     "head": font.Font(family="Helvetica", size=14, weight=font.BOLD),
@@ -63,23 +81,23 @@ def render_tasklist_lr(mode: str):
     mode L: render all leaf tasks (tasks with no children)
     mode R: render all root tasks (tasks with no parent)
     """
-    clear_window(tasks)
+    clear_window(tasks_content)
     if mode == "L":
         #If viewing leaf tasks, ensure mode is set to L for future calls to render_tasklist()
         STATE["render_mode"] = "L"
         #Get all leaf tasks
         task_names = core.get_leafs()
         #Print appropriate table heading
-        Label(tasks,text="COMPONENT TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        Label(tasks_content,text="COMPONENT TASKS",font=FONTS["head"]).grid(column=0,row=0)
     else:
         #If viewing root tasks, ensure mode is set to R for future calls to render_tasklist()
         STATE["render_mode"] = "R"
         #Get all root tasks
         task_names = core.get_root_tasks()
         #Print appropriate table heading
-        Label(tasks,text="ROOT TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        Label(tasks_content,text="ROOT TASKS",font=FONTS["head"]).grid(column=0,row=0)
     #Place tasklist in its own frame. This ensures the table heading rendered previously is centered
-    task_table = Frame(tasks)
+    task_table = Frame(tasks_content)
     task_table.grid(column=0,row=1)
     #Render column headers
     Label(task_table, text="Task Name").grid(column = 0, row = 0, sticky = 'w')
@@ -100,17 +118,17 @@ def render_tasklist_h(task: int = None, depth: int = 0, row: int = 0, task_tree 
     if depth == 0:
         #Change head task if this function was called from 'Change View' button.
         STATE["head_task"] = task
-        clear_window(tasks)
+        clear_window(tasks_content)
         #If viewing task hierarchy, ensure mode is set to H for future calls to render_tasklist()
         STATE["render_mode"] = "H"
         #Print appropriate table heading
         if task is None:
-            Label(tasks,text="ALL TASKS",font=FONTS["head"]).grid(column=0,row=0)
+            Label(tasks_content,text="ALL TASKS",font=FONTS["head"]).grid(column=0,row=0)
         elif not core.task_exists(task):
-            Label(tasks,text=f"Task '{task}' not found",font=FONTS["head"]).grid(column=0,row=0)
+            Label(tasks_content,text=f"Task '{task}' not found",font=FONTS["head"]).grid(column=0,row=0)
         else:
-            Label(tasks,text=task.upper(),font=FONTS["head"]).grid(column=0,row=0)
-        task_tree = Frame(tasks)
+            Label(tasks_content,text=task.upper(),font=FONTS["head"]).grid(column=0,row=0)
+        task_tree = Frame(tasks_content)
         task_tree.grid(column=0,row=1)
     #Get all children of current task
     for subtask in core.get_children(task):
