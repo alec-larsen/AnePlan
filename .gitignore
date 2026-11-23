@@ -2,6 +2,8 @@ tasks.db
 __pycache__
 scratch.py
 archive
-aneplan.spec
-build
-dist
+main.build
+main.dist
+main.onefile-build
+main.exe
+compile.txt
