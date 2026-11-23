@@ -24,7 +24,7 @@ tasks.title("AneTasklist")
 
 #Add canvas, which we can use to attach scrollbar.
 canvas = Canvas(tasks,width=500,height=800)
-canvas.pack(anchor="nw",side="left",fill="both")
+canvas.pack(anchor="nw",side="left",fill="both", expand=True)
 
 #Add scrollbar; pack arguments keep bar on right side
 scroll_controls = Scrollbar(tasks,orient="vertical",command=canvas.yview)
@@ -38,7 +38,6 @@ tasks_content = Frame(canvas)
 canvas.create_window((0,0),window=tasks_content,anchor="nw")
 #Bind scrollbar movement and mousewheel scrolling to canvas
 tasks_content.bind("<Configure>", lambda _: canvas.configure(scrollregion=canvas.bbox("all")))
-tasks_content.bind("<MouseWheel>", lambda _: canvas.configure(scrollregion=canvas.bbox("all")))
 
 FONTS = {
     "head": font.Font(family="Helvetica", size=14, weight=font.BOLD),
@@ -73,6 +72,8 @@ def task_str(name: int):
 def clear_window(window):
     for w in window.winfo_children():
         w.destroy()
+    #Force update to ensure all processes after this get updated information on layout (required height, no widgets, etc.)
+    master.update_idletasks()
 
 def render_tasklist_lr(mode: str):
     """
@@ -88,17 +89,18 @@ def render_tasklist_lr(mode: str):
         #Get all leaf tasks
         task_names = core.get_leafs()
         #Print appropriate table heading
-        Label(tasks_content,text="COMPONENT TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        Label(tasks_content,text="COMPONENT TASKS",font=FONTS["head"]).pack(side="top")
     else:
         #If viewing root tasks, ensure mode is set to R for future calls to render_tasklist()
         STATE["render_mode"] = "R"
         #Get all root tasks
         task_names = core.get_root_tasks()
         #Print appropriate table heading
-        Label(tasks_content,text="ROOT TASKS",font=FONTS["head"]).grid(column=0,row=0)
+        title = Label(tasks_content,text="ROOT TASKS",font=FONTS["head"])
+        title.pack(side="top")
     #Place tasklist in its own frame. This ensures the table heading rendered previously is centered
     task_table = Frame(tasks_content)
-    task_table.grid(column=0,row=1)
+    task_table.pack(anchor="nw",side="top")
     #Render column headers
     Label(task_table, text="Task Name").grid(column = 0, row = 0, sticky = 'w')
     Label(task_table, text="Progress").grid(column = 1, row = 0, sticky = 'e', padx = 20)
@@ -110,7 +112,7 @@ def render_tasklist_lr(mode: str):
         Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
         Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
 
-def render_tasklist_h(task: int = None, depth: int = 0, row: int = 0, task_tree = None):
+def render_tasklist_h(task: str = None, depth: int = 0, row: int = 0, task_tree = None):
     """
     Render list of all tasks in hierarchy format.
     """
@@ -123,13 +125,13 @@ def render_tasklist_h(task: int = None, depth: int = 0, row: int = 0, task_tree 
         STATE["render_mode"] = "H"
         #Print appropriate table heading
         if task is None:
-            Label(tasks_content,text="ALL TASKS",font=FONTS["head"]).grid(column=0,row=0)
+            Label(tasks_content,text="ALL TASKS",font=FONTS["head"]).pack(anchor="center",side="top")
         elif not core.task_exists(task):
-            Label(tasks_content,text=f"Task '{task}' not found",font=FONTS["head"]).grid(column=0,row=0)
+            Label(tasks_content,text=f"Task '{task}' not found",font=FONTS["head"]).pack(anchor="center",side="top")
         else:
-            Label(tasks_content,text=task.upper(),font=FONTS["head"]).grid(column=0,row=0)
+            Label(tasks_content,text=task.upper(),font=FONTS["head"]).pack(anchor="center", side="top")
         task_tree = Frame(tasks_content)
-        task_tree.grid(column=0,row=1)
+        task_tree.pack(anchor="nw",side="top")
     #Get all children of current task
     for subtask in core.get_children(task):
         #Add indent for every level of depth subtask sits at in tree
@@ -138,13 +140,24 @@ def render_tasklist_h(task: int = None, depth: int = 0, row: int = 0, task_tree 
         row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
     return row
 
-def render_tasklist():
+def render_tasklist(mode: str = None, task: str = None):
+    if mode:
+        STATE["render_mode"] = mode
     if STATE["render_mode"] == "L":
         render_tasklist_lr("L")
     elif STATE["render_mode"] == "R":
         render_tasklist_lr("R")
     else:
         render_tasklist_h(task=STATE["head_task"])
+    #Force update of window state to ensure required height is correct
+    master.update_idletasks()
+    canvas.yview_moveto(0)
+    #If the required height to render all content is less than the defauly window size, remove the scrollbar
+    if tasks_content.winfo_reqheight() < 800:
+        scroll_controls.pack_forget()
+    #Else, ensure it's properly rendered
+    else:
+        scroll_controls.pack(side="right",fill="y")
 
 def clear_tasklist():
     if mb.askokcancel("Clear all tasks?","This action will clear ALL tasks from the tasklist.\nAre you sure you want to do this?"):
@@ -158,14 +171,14 @@ render_options = Frame(master)
 render_options.grid(column=0,row=1,sticky="w")
 
 Label(render_options, text="Tasklist Quickview:").grid(column = 0, row = 0, sticky='w')
-Button(render_options, text="Leaf-Only Mode", command=lambda: render_tasklist_lr("L")).grid(column = 1, row = 0)
-Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist_lr("R")).grid(column = 2, row = 0)
-Button(render_options, text="All Tasks", command=render_tasklist_h).grid(column = 3, row = 0)
+Button(render_options, text="Leaf-Only Mode", command=lambda: render_tasklist("L")).grid(column = 1, row = 0)
+Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist("R")).grid(column = 2, row = 0)
+Button(render_options, text="All Tasks", command=lambda: render_tasklist("H")).grid(column = 3, row = 0)
 
 Label(render_options, text="View Subtasks Of:").grid(column = 0, row = 1, sticky='w')
 v_name = Entry(render_options)
 v_name.grid(column=1,row=1, sticky='w')
-Button(render_options, text="Change View", command=lambda: render_tasklist_h(task=v_name.get())).grid(column = 2, row = 1)
+Button(render_options, text="Change View", command=lambda: render_tasklist("H",task=v_name.get())).grid(column = 2, row = 1)
 
 Label(render_options, text="Clear All:").grid(column = 0, row = 2, sticky='w')
 Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 2, sticky='w')
