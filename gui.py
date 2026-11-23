@@ -13,10 +13,12 @@ STATE = {
 
 #Initialize control panel
 master = Tk()
+master.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
 master.geometry("600x600")
 master.title("AneTask Control Panel")
 
 tasks = Toplevel()
+tasks.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
 tasks.geometry("400x400")
 tasks.title("AneTasklist")
 
