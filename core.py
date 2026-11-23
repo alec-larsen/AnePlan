@@ -121,87 +121,6 @@ def get_leafs():
     """).fetchall()
     return [name[0] for name in tasks if name[0] not in [res[0] for res in results]]
 
-#Setter functions. All assume that arguments are well behaved (all ill-defined arguments are filtered out in gui input handlers)
-def set_name(task: str, name: str):
-    """
-    Rename task.
-    """
-    conn.execute("""
-    UPDATE tasks
-    SET name = ?
-    WHERE name = ?
-    """, (name,task))
-    conn.commit()
-
-def set_weight(task: str, weight: int):
-    """
-    Set task weight.
-
-    NOTE: Only leaf tasks keep their weight. All higher-level tasks have a weight equal to the sum of their children.
-    """
-    #Leaf tasks get the set weight
-    if not get_children(task):
-        conn.execute("""
-        UPDATE tasks
-        SET weight = ?
-        WHERE name = ?
-        """, (weight,task))
-        task = get_parent(task)
-    while task is not None:
-        #Any weight of a non-leaf task is the sum of its children's weights
-        agg_weight = sum([get_weight(child) for child in get_children(task)])
-        conn.execute("""
-        UPDATE tasks
-        SET weight = ?
-        WHERE name = ?
-        """, (agg_weight,task))
-        task = get_parent(task)
-    conn.commit()
-
-def set_completion(task: str, completion: float):
-    """
-    Set task completion.
-    
-    NOTE: Only leaf tasks keep their set completion. All higher-level tasks have completion equal to the sum of their children.
-    """
-    #Leaf tasks get the set weight
-    if not get_children(task):
-        conn.execute("""
-        UPDATE tasks
-        SET completion = ?
-        WHERE name = ?
-        """, (completion,task))
-        task = get_parent(task)
-    while task is not None:
-        #Any completion of a non-leaf task is the sum of its children's completions
-        agg_completion = sum([get_completion(child) for child in get_children(task)])
-        conn.execute("""
-        UPDATE tasks
-        SET completion = ?
-        WHERE name = ?
-        """, (agg_completion,task))
-        task = get_parent(task)
-    conn.commit()
-
-def set_parent(task: str, parent: str):
-    """
-    Set task parent.
-
-    Note that parents should not be set in such a way that a loop of parent-child relationships forms. Input handlers in gui protect from these cases.
-    """
-    old_parent = get_parent(task)
-    conn.execute("""
-    UPDATE tasks
-    SET parent = ?
-    WHERE name = ?
-    """, (parent,task))
-    conn.commit()
-    #This parent reassignment changes the weight and completion of both the old and new parent
-    set_weight(parent,0)
-    set_weight(old_parent,0)
-    set_completion(parent,0)
-    set_completion(old_parent,0)
-
 #Check functions; ensure key properties of tasklist aren't violated
 def in_cycle(task: str, parent: str):
     """
@@ -301,3 +220,85 @@ def clear_tasks():
     #Remove task from database
     conn.execute("""DELETE FROM tasks""")
     conn.commit()
+
+#Setter functions. All assume that arguments are well behaved (all ill-defined arguments are filtered out in gui input handlers)
+def set_weight(task: str, weight: int):
+    """
+    Set task weight.
+
+    NOTE: Only leaf tasks keep their weight. All higher-level tasks have a weight equal to the sum of their children.
+    """
+    #Leaf tasks get the set weight
+    if not get_children(task):
+        conn.execute("""
+        UPDATE tasks
+        SET weight = ?
+        WHERE name = ?
+        """, (weight,task))
+        task = get_parent(task)
+    while task is not None:
+        #Any weight of a non-leaf task is the sum of its children's weights
+        agg_weight = sum([get_weight(child) for child in get_children(task)])
+        conn.execute("""
+        UPDATE tasks
+        SET weight = ?
+        WHERE name = ?
+        """, (agg_weight,task))
+        task = get_parent(task)
+    conn.commit()
+
+def set_completion(task: str, completion: float):
+    """
+    Set task completion.
+    
+    NOTE: Only leaf tasks keep their set completion. All higher-level tasks have completion equal to the sum of their children.
+    """
+    #Leaf tasks get the set weight
+    if not get_children(task):
+        conn.execute("""
+        UPDATE tasks
+        SET completion = ?
+        WHERE name = ?
+        """, (completion,task))
+        task = get_parent(task)
+    while task is not None:
+        #Any completion of a non-leaf task is the sum of its children's completions
+        agg_completion = sum([get_completion(child) for child in get_children(task)])
+        conn.execute("""
+        UPDATE tasks
+        SET completion = ?
+        WHERE name = ?
+        """, (agg_completion,task))
+        task = get_parent(task)
+    conn.commit()
+
+def set_parent(task: str, parent: str):
+    """
+    Set task parent.
+
+    Note that parents should not be set in such a way that a loop of parent-child relationships forms. Input handlers in gui protect from these cases.
+    """
+    old_parent = get_parent(task)
+    conn.execute("""
+    UPDATE tasks
+    SET parent = ?
+    WHERE name = ?
+    """, (parent,task))
+    conn.commit()
+    #This parent reassignment changes the weight and completion of both the old and new parent
+    set_weight(parent,0)
+    set_weight(old_parent,0)
+    set_completion(parent,0)
+    set_completion(old_parent,0)
+
+def set_name(task: str, name: str):
+    """
+    Rename task.
+    """
+    #Add new task
+    add_task(name, get_weight(task), get_completion(task), get_parent(task))
+    #Update parent field of all children with new name
+    for child in get_children(task):
+        set_parent(child, name)
+    #Delete outdated task
+    remove_task(task)

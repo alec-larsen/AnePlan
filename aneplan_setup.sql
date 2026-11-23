@@ -1,6 +1,6 @@
 create table if not exists tasks(
 	name TEXT UNIQUE not null,
-	parent INTEGER references tasks(name),
+	parent TEXT,
 	weight numeric not null default 1,
 	completion numeric not null default 0
 );
