@@ -12,8 +12,12 @@ if getattr(sys, "frozen", False):
 else:
     _ROOT_DIRECTORY = Path(__file__).resolve().parents[0] # type: ignore
 
+#_ROOT_DIRECTORY may route tasks.db to temporary directory, wiping any progress. Send data to APPDATA to carry over between sessions
+_DATA_DIRECTORY = Path(os.getenv("LOCALAPPDATA")) / "AnePlan"
+_DATA_DIRECTORY.mkdir(exist_ok=True)
+
 #Set up connection to SQLite database
-conn = sqlite3.connect(_ROOT_DIRECTORY / "tasks.db")
+conn = sqlite3.connect(_DATA_DIRECTORY / "tasks.db")
 
 def setup():
     """
