@@ -2,6 +2,6 @@ tasks.db
 __pycache__
 scratch.py
 archive
-main.spec
+aneplan.spec
 build
 dist
