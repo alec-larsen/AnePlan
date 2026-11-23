@@ -16,7 +16,7 @@ master = Tk()
 master.geometry("600x600")
 master.title("AneTask Control Panel")
 
-tasks = Tk()
+tasks = Toplevel()
 tasks.geometry("400x400")
 tasks.title("AneTasklist")
 
