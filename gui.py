@@ -148,6 +148,7 @@ def render_tasklist(mode: str = None, task: str = None):
     elif STATE["render_mode"] == "R":
         render_tasklist_lr("R")
     else:
+        STATE["head_task"] = task
         render_tasklist_h(task=STATE["head_task"])
     #Force update of window state to ensure required height is correct
     master.update_idletasks()
