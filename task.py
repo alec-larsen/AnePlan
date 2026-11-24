@@ -70,7 +70,7 @@ class Task():
             WHERE name = ?
             """, (self.name,)).fetchone()[1:]
             #Build Task object from name of parent
-            parent = Task(parent_name)
+            parent = Task(parent_name) if parent_name is not None else SUPERTASK
             #Assign loaded values
             self._weight = weight
             self._completion = completion
