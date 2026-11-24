@@ -29,3 +29,15 @@ class Task():
         FROM tasks
         WHERE name = ?
         """, (self.name,)).fetchone()[0]
+
+    def fetch_parent(self):
+        """
+        Given the name of a task, find its parent
+        """
+        if not self:
+            raise KeyError(f"Task with name '{self.name}' does not exist.")
+        return conn.execute("""
+        SELECT parent
+        FROM tasks
+        WHERE name = ?
+        """, (self.name,)).fetchone()[0]
