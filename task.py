@@ -3,6 +3,7 @@ from core import conn
 class Task():
     def __init__(self, name: str):
         self.name = name
+        self._loaded = False
 
     def __bool__(self):
         """
@@ -19,8 +20,10 @@ class Task():
         """
         Load all data for task if not already in local memory.
         """
+        #Check that task exists the the database
         if not self:
             raise KeyError(f"Task with name '{self.name}' does not exist.")
+        #Load only if task data was not previously loaded into local memory
         if not self._loaded:
             #Fetch all task details from database
             parent_name, weight, completion = conn.execute("""
