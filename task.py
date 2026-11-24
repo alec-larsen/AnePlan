@@ -15,6 +15,28 @@ class Task():
         WHERE name = ?
         """, (self.name,)).fetchone()[0] > 0
 
+    def load(self):
+        """
+        Load all data for task if not already in local memory.
+        """
+        if not self:
+            raise KeyError(f"Task with name '{self.name}' does not exist.")
+        if not self._loaded:
+            #Fetch all task details from database
+            parent_name, weight, completion = conn.execute("""
+            SELECT *
+            FROM tasks
+            WHERE name = ?
+            """, (self.name,)).fetchone()[1:]
+            #Build Task object from name of parent
+            parent = Task(parent_name)
+            #Assign loaded values
+            self._weight = weight
+            self._completion = completion
+            self._parent = parent
+            #Mark that task is now loaded
+            self._loaded = True
+
     def fetch_weight(self):
         """
         Fetch the weight of the task from the database
