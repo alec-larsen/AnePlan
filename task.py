@@ -1,6 +1,11 @@
 from core import conn
 
 class Task():
+    """
+    Contains all relevant information on a given task.
+
+    NOTE (for developers): The existence of a Task object does NOT imply that a task with its name exists in the database (tasks.db).
+    """
     def __init__(self, name: str):
         self.name = name
         self._loaded = False
@@ -15,6 +20,12 @@ class Task():
         FROM tasks
         WHERE name = ?
         """, (self.name,)).fetchone()[0] > 0
+
+    def __str__(self):
+        #If task exists in database, print task details.
+        if self:
+            return f"{self.name} - {self.completion:.2f}/{self.weight}" + ( "(-%)" if self.weight == 0 else f" {self.completion/self.weight*100:.2f}%")
+        return f"{self.name} - NOT IN TASK DATABASE"
 
     def load(self):
         """
