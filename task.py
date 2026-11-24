@@ -32,12 +32,12 @@ class Task():
 
     def fetch_parent(self):
         """
-        Given the name of a task, find its parent
+        Fetch the parent of a task from the database
         """
         if not self:
             raise KeyError(f"Task with name '{self.name}' does not exist.")
-        return conn.execute("""
+        return Task(conn.execute("""
         SELECT parent
         FROM tasks
         WHERE name = ?
-        """, (self.name,)).fetchone()[0]
+        """, (self.name,)).fetchone()[0])
