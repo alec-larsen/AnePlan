@@ -41,3 +41,16 @@ class Task():
         FROM tasks
         WHERE name = ?
         """, (self.name,)).fetchone()[0])
+
+    def fetch_completion(self):
+        """
+        Fetch the completion of a task from the database.
+        """
+        if not self:
+            raise KeyError(f"Task with name '{self.name}' does not exist.")
+        
+        return conn.execute("""
+        SELECT completion
+        FROM tasks
+        WHERE name = ?
+        """, (self.name,)).fetchone()[0]
