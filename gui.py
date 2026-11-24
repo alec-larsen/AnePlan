@@ -140,7 +140,7 @@ def render_tasklist_h(task: str = None, depth: int = 0, row: int = 0, task_tree 
         row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
     return row
 
-def render_tasklist(mode: str = None, task: str = None):
+def render_tasklist(mode: str = STATE["render_mode"], task: str = STATE["head_task"]):
     if mode:
         STATE["render_mode"] = mode
     if STATE["render_mode"] == "L":
