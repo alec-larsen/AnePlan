@@ -40,42 +40,28 @@ class Task():
             #Mark that task is now loaded
             self._loaded = True
 
-    def fetch_weight(self):
+    @property
+    def weight(self):
         """
         Fetch the weight of the task from the database
 
         If the given task does not exist in the database, return -1
         """
-        if not self:
-            raise KeyError(f"Task with name '{self.name}' does not exist.")
-
-        return conn.execute("""
-        SELECT weight
-        FROM tasks
-        WHERE name = ?
-        """, (self.name,)).fetchone()[0]
-
-    def fetch_parent(self):
+        self.load()
+        return self._weight
+    
+    @property
+    def parent(self):
         """
         Fetch the parent of a task from the database
         """
-        if not self:
-            raise KeyError(f"Task with name '{self.name}' does not exist.")
-        return Task(conn.execute("""
-        SELECT parent
-        FROM tasks
-        WHERE name = ?
-        """, (self.name,)).fetchone()[0])
+        self.load()
+        return self._parent
 
-    def fetch_completion(self):
+    @property
+    def completion(self):
         """
         Fetch the completion of a task from the database.
         """
-        if not self:
-            raise KeyError(f"Task with name '{self.name}' does not exist.")
-        
-        return conn.execute("""
-        SELECT completion
-        FROM tasks
-        WHERE name = ?
-        """, (self.name,)).fetchone()[0]
+        self.load()
+        return self._completion
