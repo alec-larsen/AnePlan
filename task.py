@@ -48,6 +48,13 @@ class Task():
         WHERE name = ?
         """, (self.name,)).fetchone()[0] > 0
 
+    def __eq__(self, task):
+        """
+        Define equivalence between two tasks, both present in the database
+        """
+        #Two tasks should never have the same name if both are in the database
+        return self.name == task.name
+
     def __str__(self):
         #If task exists in database, print task details.
         if self:
