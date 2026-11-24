@@ -1,5 +1,32 @@
 from core import conn
 
+def fetch_roots():
+    """
+    Fetch list of all root tasks (tasks with no parents) from database
+    """
+    results = conn.execute("""
+    SELECT name
+    FROM tasks
+    WHERE parent is NULL
+    """).fetchall()
+    return [Task(res[0]) for res in results]
+
+def fetch_leafs():
+    """
+    Fetch list of all leaf tasks (tasks with no children)
+    """
+    #Fetch the parents of each task in the database
+    parents = conn.execute("""
+        SELECT parent
+        FROM tasks
+        """).fetchall()
+    #Fetch the names of all tasks
+    tasks = conn.execute("""
+        SELECT name
+        FROM tasks
+    """).fetchall()
+    #Childless tasks are those whose name shows up in tasks but not in parents
+    return [Task(name[0]) for name in tasks if name[0] not in [par[0] for par in parents]]
 class Task():
     """
     Contains all relevant information on a given task.
