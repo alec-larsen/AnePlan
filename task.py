@@ -124,7 +124,6 @@ class Task():
             FROM tasks
             WHERE parent = ?
             """, (self.name,)).fetchall()
-        print(results)
         return [Task(res[0]) for res in results]
 
     def in_cycle(self, parent: Task):
