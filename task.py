@@ -127,5 +127,19 @@ class Task():
         print(results)
         return [Task(res[0]) for res in results]
 
+    def in_cycle(self, parent: Task):
+        """
+        Check whether assigning new parent to task forms a cycle.
+        """
+        #Traverse up task tree looking for a root task (parent is None)
+        while parent is not SUPERTASK:
+            #If parent is the original task, we have found a cycle.
+            if parent == self:
+                return True
+            #Move up a step on the task tree
+            parent = parent.parent
+
+        return False
+
 #This is, for practical purposes, the parent of all root tasks.
 SUPERTASK = Task(None)
