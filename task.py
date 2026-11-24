@@ -103,3 +103,22 @@ class Task():
         """
         self.load()
         return self._completion
+
+    def fetch_children(self):
+        """
+        Fetch a list of all tasks with a given parent
+        """
+        #Confirm if SUPERTASK has explicitly been passed into fetch_children to trigger fetch_roots
+        if self is SUPERTASK:
+            return fetch_roots()
+        #If SUPERTASK was not explicitly passed, treat Task argument as being from a normal parent
+        results = conn.execute("""
+            SELECT name
+            FROM tasks
+            WHERE parent = ?
+            """, (self.name,)).fetchall()
+        print(results)
+        return [Task(res[0]) for res in results]
+
+#This is, for practical purposes, the parent of all root tasks.
+SUPERTASK = Task(None)
