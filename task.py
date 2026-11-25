@@ -157,6 +157,31 @@ class Task():
         self.force_load()
         return self._completion
 
+    @completion.setter
+    def completion(self, completion: float):
+        """
+        Set task completion.
+
+        NOTE: Only leaf tasks keep their completion. All higher-level tasks have a completion equal to the sum of their children.
+        """
+        #Changing the completion of a task will change the completions of all its direct ancestors
+        while self is not SUPERTASK:
+            children = self.fetch_children()
+            #Any completion of a non-leaf task is the sum of its children's completions; if task has no children, it's a leaf and should be assigned the set completion
+            agg_comp = sum([child.completion for child in children]) if children else completion
+            print(agg_comp)
+            #Update completion in database
+            conn.execute("""
+            UPDATE tasks
+            SET completion = ?
+            WHERE name = ?
+            """, (agg_comp,self.name))
+            #Update completion attribute locally
+            self._completion = agg_comp
+            self = self.parent
+        #Commit operations to database
+        conn.commit()
+
     def fetch_children(self):
         """
         Fetch a list of all tasks with a given parent
