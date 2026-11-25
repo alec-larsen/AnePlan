@@ -28,6 +28,15 @@ def fetch_leafs():
     """).fetchall()
     #Childless tasks are those whose name shows up in tasks but not in parents
     return [Task(name[0]) for name in tasks if name[0] not in [par[0] for par in parents]]
+
+def clear_list():
+    """
+    Removes all tasks from tasklist.
+    """
+    #Remove task from database
+    conn.execute("""DELETE FROM tasks""")
+    conn.commit()
+
 class Task():
     """
     Contains all relevant information on a given task.
