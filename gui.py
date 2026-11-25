@@ -3,6 +3,7 @@ import tkinter.font as font
 import tkinter.messagebox as mb
 from tkinter.ttk import *
 
+from core import _ROOT_DIRECTORY
 from task import *
 import util
 
@@ -13,12 +14,12 @@ STATE = {
 
 #Initialize control panel
 master = Tk()
-master.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
+master.iconbitmap(str(_ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
 master.geometry("530x600")
 master.title("AneTask Control Panel")
 
 tasks = Toplevel()
-tasks.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
+tasks.iconbitmap(str(_ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
 tasks.geometry("500x800")
 tasks.title("AneTasklist")
 
