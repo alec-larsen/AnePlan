@@ -41,12 +41,19 @@ class Task():
     """
     Contains all relevant information on a given task.
 
-    NOTE (for developers): The existence of a Task object does NOT imply that a task with its name exists in the database (tasks.db).
+    NOTE (for developers):
+    The existence of a Task object does NOT imply that a task with its name exists in the database (tasks.db).
+    This is why initializing a task does not check for existence.
     """
     def __init__(self, name: str|None):
+        #Remove and leading/trailing whitespace
+        name = name.strip()
         #Name should be string value (None only for SUPERTASK)
         if not isinstance(name, str) and name is not None:
             raise TypeError(f"Task name should of of type str; provided argument of type {type(name)}")
+        #Check that task name is not empty
+        if not name:
+            raise ValueError("Task name should not be empty")
         #Name should not be a strint
         if util.is_strint(name):
             raise ValueError("Task name should not be a strint")
