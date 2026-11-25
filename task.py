@@ -214,7 +214,7 @@ class Task():
         Add task to database.
         """
         if self:
-            raise KeyError("Task with name '{self.name}' already exists")
+            raise KeyError(f"Task with name '{self.name}' already exists")
         if not isinstance(weight, int):
             raise ValueError("Task could not be added. Assigned weight must be an integer.")
         if not isinstance(completion, (int, float)):
