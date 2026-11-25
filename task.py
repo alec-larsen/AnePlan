@@ -81,7 +81,7 @@ class Task():
     def __str__(self):
         #If task exists in database, print task details.
         if self:
-            return f"{self.name} - {self.completion:.2f}/{self.weight}" + ( "(-%)" if self.weight == 0 else f" {self.completion/self.weight*100:.2f}%")
+            return f"{self.name} - {self.completion:.2f}/{self.weight}" + ( " (-%)" if self.weight == 0 else f" ({self.completion/self.weight*100:.2f}%)")
         return f"{self.name} - NOT IN TASK DATABASE"
 
     def force_load(self):
