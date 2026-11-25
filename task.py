@@ -90,7 +90,7 @@ class Task():
             """
             #Check that task exists the the database
             if not self:
-                raise KeyError(f"Task with name '{self.name}' does not exist.")
+                raise KeyError(f"Task with name '{self.name}' does not exist in the tasklist.")
 
             #Fetch all task details from database
             parent_name, weight, completion = conn.execute("""
