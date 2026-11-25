@@ -94,6 +94,38 @@ class Task():
         """
         self.load()
         return self._weight
+
+    @weight.setter
+    def weight(self, weight: int):
+        """
+        Set task weight.
+
+        NOTE: Only leaf tasks keep their weight. All higher-level tasks have a weight equal to the sum of their children.
+        """
+        #Leaf tasks get the set weight
+        if not self.fetch_children():
+            #Update weight in database
+            conn.execute("""
+            UPDATE tasks
+            SET weight = ?
+            WHERE name = ?
+            """, (weight,self.name))
+            #Update weight attribute locally
+            self._weight = weight
+            self = self.parent
+        while self is not SUPERTASK:
+            #Any weight of a non-leaf task is the sum of its children's weights
+            agg_weight = sum([child.weight for child in self.fetch_children()])
+            #Update weight in database
+            conn.execute("""
+            UPDATE tasks
+            SET weight = ?
+            WHERE name = ?
+            """, (agg_weight,self.name))
+            self._weight = agg_weight
+            self = self.parent
+        #Commit operations to database
+        conn.commit()
     
     @property
     def parent(self):
