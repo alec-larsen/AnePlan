@@ -46,17 +46,18 @@ class Task():
     This is why initializing a task does not check for existence.
     """
     def __init__(self, name: str|None):
-        #Remove and leading/trailing whitespace
-        name = name.strip()
         #Name should be string value (None only for SUPERTASK)
         if not isinstance(name, str) and name is not None:
             raise TypeError(f"Task name should of of type str; provided argument of type {type(name)}")
-        #Check that task name is not empty
-        if not name:
-            raise ValueError("Task name should not be empty")
-        #Name should not be a strint
-        if util.is_strint(name):
-            raise ValueError("Task name should not be a strint")
+        #Remove and leading/trailing whitespace (provided name is not None) and verifiy name validity
+        elif name is not None:
+            name = name.strip()
+            #Check that task name is not empty
+            if not name:
+                raise ValueError("Task name should not be empty")
+            #Name should not be a strint
+            if util.is_strint(name):
+                raise ValueError("Task name should not be a strint")
         self.name = name
 
     def __bool__(self):
