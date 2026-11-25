@@ -209,5 +209,23 @@ class Task():
 
         return False
 
+    def add(self, weight: int = 1, completion: float = 0, parent: Task = None):
+        """
+        Add task to database.
+        """
+        if self:
+            raise KeyError("Task with name '{self.name}' already exists")
+        if not isinstance(weight, int):
+            raise ValueError("Task could not be added. Assigned weight must be an integer.")
+        if not isinstance(completion, (int, float)):
+            raise ValueError("Task could not be added. Completion must be an integer or float.")
+        if completion > weight:
+            raise ValueError("Task could not be added. Completion cannot exceed assigned task weight.")
+        conn.execute("""
+        INSERT INTO tasks (name, parent, weight, completion)
+        VALUES (?,?,?,?)
+        """, (self.name, parent, weight, completion))
+        conn.commit()
+
 #This is, for practical purposes, the parent of all root tasks.
 SUPERTASK = Task(None)
