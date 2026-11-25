@@ -85,14 +85,35 @@ class Task():
             #Mark that task is now loaded
             self._loaded = True
 
+    def force_load(self):
+            """
+            Load all data for task from database, regardless of whether locally loaded.
+            """
+            #Check that task exists the the database
+            if not self:
+                raise KeyError(f"Task with name '{self.name}' does not exist.")
+
+            #Fetch all task details from database
+            parent_name, weight, completion = conn.execute("""
+            SELECT *
+            FROM tasks
+            WHERE name = ?
+            """, (self.name,)).fetchone()[1:]
+            #Build Task object from name of parent
+            parent = Task(parent_name) if parent_name is not None else SUPERTASK
+            #Assign loaded values
+            self._weight = weight
+            self._completion = completion
+            self._parent = parent
+            #Mark that task is now loaded
+            self._loaded = True
+
     @property
     def weight(self):
         """
         Fetch the weight of the task from the database
-
-        If the given task does not exist in the database, return -1
         """
-        self.load()
+        self.force_load()
         return self._weight
 
     @weight.setter
@@ -132,7 +153,7 @@ class Task():
         """
         Fetch the parent of a task from the database
         """
-        self.load()
+        self.force_load()
         return self._parent
 
     @property
@@ -140,7 +161,7 @@ class Task():
         """
         Fetch the completion of a task from the database.
         """
-        self.load()
+        self.force_load()
         return self._completion
 
     def fetch_children(self):
