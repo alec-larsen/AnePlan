@@ -222,7 +222,29 @@ class Task():
         conn.execute("""
         INSERT INTO tasks (name, parent, weight, completion)
         VALUES (?,?,?,?)
-        """, (self.name, parent, weight, completion))
+        """, (self.name, parent.name, weight, completion))
+        conn.commit()
+
+    def remove(self):
+        """
+        Remove task from database.
+
+        All children of task become children of deleted task's parent.
+        """
+        #Get parent of task to be deleted.
+        parent = self.parent
+
+        #Any children of task become children of parent.
+        children = self.fetch_children()
+        for child in children:
+            child.parent = parent
+
+        #Remove task from database
+        conn.execute("""
+        DELETE
+        FROM tasks
+        WHERE name = ?
+        """, (self.name,))
         conn.commit()
 
 #This is, for practical purposes, the parent of all root tasks.
