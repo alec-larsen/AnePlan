@@ -8,3 +8,4 @@ main.onefile-build
 main.exe
 tests
 .vscode
+.pytest_cache
