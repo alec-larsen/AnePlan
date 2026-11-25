@@ -135,8 +135,6 @@ class Task():
             SET weight = ?
             WHERE name = ?
             """, (agg_weight,self.name))
-            #Update weight attribute locally
-            self._weight = agg_weight
             self = self.parent
         #Commit operations to database
         conn.commit()
@@ -176,8 +174,6 @@ class Task():
             SET completion = ?
             WHERE name = ?
             """, (agg_comp,self.name))
-            #Update completion attribute locally
-            self._completion = agg_comp
             self = self.parent
         #Commit operations to database
         conn.commit()
