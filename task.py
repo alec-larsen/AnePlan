@@ -33,9 +33,14 @@ class Task():
 
     NOTE (for developers): The existence of a Task object does NOT imply that a task with its name exists in the database (tasks.db).
     """
-    def __init__(self, name: str):
+    def __init__(self, name: str|None):
+        #Name should be string value (None only for SUPERTASK)
+        if not isinstance(name, str) and name is not None:
+            raise TypeError(f"Task name should of of type str; provided argument of type {type(name)}")
+        #Name should not be a strint
+        if util.is_strint(name):
+            raise ValueError("Task name should not be a strint")
         self.name = name
-        self._loaded = False
 
     def __bool__(self):
         """
@@ -60,30 +65,6 @@ class Task():
         if self:
             return f"{self.name} - {self.completion:.2f}/{self.weight}" + ( "(-%)" if self.weight == 0 else f" {self.completion/self.weight*100:.2f}%")
         return f"{self.name} - NOT IN TASK DATABASE"
-
-    def load(self):
-        """
-        Load all data for task if not already in local memory.
-        """
-        #Check that task exists the the database
-        if not self:
-            raise KeyError(f"Task with name '{self.name}' does not exist.")
-        #Load only if task data was not previously loaded into local memory
-        if not self._loaded:
-            #Fetch all task details from database
-            parent_name, weight, completion = conn.execute("""
-            SELECT *
-            FROM tasks
-            WHERE name = ?
-            """, (self.name,)).fetchone()[1:]
-            #Build Task object from name of parent
-            parent = Task(parent_name) if parent_name is not None else SUPERTASK
-            #Assign loaded values
-            self._weight = weight
-            self._completion = completion
-            self._parent = parent
-            #Mark that task is now loaded
-            self._loaded = True
 
     def force_load(self):
             """
