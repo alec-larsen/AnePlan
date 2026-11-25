@@ -1,4 +1,5 @@
 from core import conn
+import util
 
 def fetch_roots():
     """
