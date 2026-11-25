@@ -238,6 +238,14 @@ class Task():
 
         return False
 
+    def update_weight(self):
+        """
+        Update weight of task and, by consequence, all of its direct ancestors.
+
+        This function is intended to be called on parent tasks only and exists purely for code readability
+        """
+        self.weight = 0
+
     def add(self, weight: int = 1, completion: float = 0, parent: Task = None):
         """
         Add task to database.
@@ -255,6 +263,8 @@ class Task():
         VALUES (?,?,?,?)
         """, (self.name, parent.name, weight, completion))
         conn.commit()
+        #Addition of task affects parent's weight
+        parent.update_weight()
 
     def remove(self):
         """
@@ -277,6 +287,8 @@ class Task():
         WHERE name = ?
         """, (self.name,))
         conn.commit()
+        #Removal of task affects parent's weight
+        parent.update_weight()
 
 #This is, for practical purposes, the parent of all root tasks.
 SUPERTASK = Task(None)
