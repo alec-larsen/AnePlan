@@ -154,6 +154,26 @@ class Task():
         """
         self.force_load()
         return self._completion
+    
+    @parent.setter
+    def parent(self, parent: Task):
+        """
+        Set task parent.
+
+        Note that parents should not be set in such a way that a loop of parent-child relationships forms. Input handlers in gui protect from these cases.
+        """
+        old_parent = self.parent
+        conn.execute("""
+        UPDATE tasks
+        SET parent = ?
+        WHERE name = ?
+        """, (parent.name,self.name))
+        conn.commit()
+        #This parent reassignment changes the weight and completion of both the old and new parent
+        parent.weight = 0
+        old_parent.weight = 0
+        parent.completion = 0
+        old_parent.completion = 0
 
     @completion.setter
     def completion(self, completion: float):
