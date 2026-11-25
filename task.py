@@ -110,7 +110,6 @@ class Task():
             children = self.fetch_children()
             #Any weight of a non-leaf task is the sum of its children's weights; if task has no children, it's a leaf and should be assigned the set weight
             agg_weight = sum([child.weight for child in children]) if children else weight
-            print(agg_weight)
             #Update weight in database
             conn.execute("""
             UPDATE tasks
@@ -169,7 +168,6 @@ class Task():
             children = self.fetch_children()
             #Any completion of a non-leaf task is the sum of its children's completions; if task has no children, it's a leaf and should be assigned the set completion
             agg_comp = sum([child.completion for child in children]) if children else completion
-            print(agg_comp)
             #Update completion in database
             conn.execute("""
             UPDATE tasks
