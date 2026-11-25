@@ -90,6 +90,20 @@ class Task():
             #Mark that task is now loaded
             self._loaded = True
 
+    def rename(self, new_name):
+        """
+        Assign task a new name.
+        """
+        #Add new taskwith new name
+        renamed_task = Task(new_name)
+        #Assign all other properties of previous task to new task
+        renamed_task.add(self.weight, self.completion, self.parent)
+        #Update parent field of all children with new name
+        for child in self.fetch_children():
+            child.parent = renamed_task
+        #Delete outdated task
+        self.remove()
+
     @property
     def weight(self):
         """
