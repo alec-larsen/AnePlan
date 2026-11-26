@@ -78,20 +78,23 @@ def render_tasklist_lr(mode: str):
     mode R: render all root tasks (tasks with no parent)
     """
     clear_window(tasks_content)
+    total_completion = sum([root.completion for root in fetch_roots()])
+    total_weight = sum([root.weight for root in fetch_roots()])
+    percent_complete = " (-%)" if total_weight == 0 else f" ({total_completion/total_weight*100:.2f}%)"
     if mode == "L":
         #If viewing leaf tasks, ensure mode is set to L for future calls to render_tasklist()
         STATE["render_mode"] = "L"
         #Get all leaf tasks
         tasks = fetch_leafs()
         #Print appropriate table heading
-        Label(tasks_content,text="COMPONENT TASKS",font=FONTS["head"]).pack(side="top")
+        Label(tasks_content,text="COMPONENT TASKS"+percent_complete,font=FONTS["head"]).pack(side="top")
     else:
         #If viewing root tasks, ensure mode is set to R for future calls to render_tasklist()
         STATE["render_mode"] = "R"
         #Get all root tasks
         tasks = fetch_roots()
         #Print appropriate table heading
-        title = Label(tasks_content,text="ROOT TASKS",font=FONTS["head"])
+        title = Label(tasks_content,text="ROOT TASKS"+percent_complete,font=FONTS["head"])
         title.pack(side="top")
     #Place tasklist in its own frame. This ensures the table heading rendered previously is centered
     task_table = Frame(tasks_content)
@@ -124,11 +127,15 @@ def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task
             return
         #Print appropriate table heading
         if task is SUPERTASK:
-            Label(tasks_content,text="ALL TASKS",font=FONTS["head"]).pack(anchor="center",side="top")
+            total_completion = sum([root.completion for root in fetch_roots()])
+            total_weight = sum([root.weight for root in fetch_roots()])
+            percent_complete = " (-%)" if total_weight == 0 else f" ({total_completion/total_weight*100:.2f}%)"
+            Label(tasks_content,text="ALL TASKS" + percent_complete,font=FONTS["head"]).pack(anchor="center",side="top")
         elif not task:
             Label(tasks_content,text=f"Task '{task.name}' not found",font=FONTS["head"]).pack(anchor="center",side="top")
         else:
-            Label(tasks_content,text=task.name.upper(),font=FONTS["head"]).pack(anchor="center", side="top")
+            percent_complete = " (-%)" if task.weight == 0 else f" ({task.completion/task.weight*100:.2f}%)"
+            Label(tasks_content,text=task.name.upper() + percent_complete,font=FONTS["head"]).pack(anchor="center", side="top")
         task_tree = Frame(tasks_content)
         task_tree.pack(anchor="nw",side="top")
     #Get all children of current task
