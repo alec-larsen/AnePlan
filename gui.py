@@ -8,7 +8,7 @@ from task import *
 import util
 
 STATE = {
-    "render_mode": "L", #Current mode tasklist renders in (Leaf-Only, Root-Only, Hierarchy)
+    "render_mode": "H", #Current mode tasklist renders in (Leaf-Only, Root-Only, Hierarchy)
     "head_task": SUPERTASK #Task whose subtasks are rendered in hierarchy view. None renders all tasks.
 }
 
@@ -139,12 +139,10 @@ def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task
         row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
     return row
 
-def render_tasklist(mode: str = STATE["render_mode"], task: Task = STATE["head_task"]):
-    if mode:
-        STATE["render_mode"] = mode
-    if STATE["render_mode"] == "L":
+def render_tasklist(mode: str, task: Task = STATE["head_task"]):
+    if mode == "L":
         render_tasklist_lr("L")
-    elif STATE["render_mode"] == "R":
+    elif mode == "R":
         render_tasklist_lr("R")
     else:
         STATE["head_task"] = task
@@ -169,7 +167,7 @@ def refresh_tasklist():
 def clear_tasklist():
     if mb.askokcancel("Clear all tasks?","This action will clear ALL tasks from the tasklist.\nAre you sure you want to do this?"):
         clear_list()
-        render_tasklist()
+        refresh_tasklist()
 
 #Options widgets
 Label(master, text="Options", font=FONTS["subhead"]).grid(column=0,row=0,sticky='w')
@@ -272,7 +270,7 @@ def add_task(name: str, weight: str, parent: str):
         #Add task
         task.add(weight, 0, parent)
         #Re-render the tasklist to see changes
-        render_tasklist()
+        refresh_tasklist()
 
 Button(add_task_options, text="Add Task", command=lambda: add_task(a_name.get(),a_weight.get(),a_parent.get())).grid(column=0, row=4, sticky= "w")
 
@@ -440,7 +438,7 @@ def modify_task(task: str, name: str, weight: str, completion: str, parent: str)
         modify_name(task, name)
     
     #Reload tasklist to reflect changes
-    render_tasklist()
+    refresh_tasklist()
 
 Button(modify_task_options, text="Modify Task", command=lambda: modify_task(m_name_old.get().strip(), m_name.get().strip(), m_weight.get().strip(), m_comp.get().strip(), m_parent.get().strip())).grid(column=0, row=6, sticky= "w")
 
@@ -496,7 +494,7 @@ def remove_task(name: str):
         if mb.askokcancel(f"Remove {name}?", removal_message):
             task.remove()
             #After adding, we need to re-render the tasklist to see changes
-            render_tasklist()
+            refresh_tasklist()
 
 Button(remove_task_options, text="Remove Task", command=lambda: remove_task(r_name.get().strip())).grid(column=0, row=2, sticky= "w")
 

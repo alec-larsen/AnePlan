@@ -4,5 +4,5 @@ import gui
 if __name__ == "__main__":
     #Render the tasklist at runtime
     core.setup()
-    gui.render_tasklist()
+    gui.refresh_tasklist()
     gui.master.mainloop()
