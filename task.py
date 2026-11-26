@@ -71,7 +71,7 @@ class Task():
         WHERE name = ?
         """, (self.name,)).fetchone()[0] > 0
 
-    def __eq__(self, task):
+    def __eq__(self, task: 'Task'):
         """
         Define equivalence between two tasks, both present in the database
         """
@@ -168,7 +168,7 @@ class Task():
         return self._completion
     
     @parent.setter
-    def parent(self, parent: Task):
+    def parent(self, parent: 'Task'):
         """
         Set task parent.
 
@@ -224,7 +224,7 @@ class Task():
             """, (self.name,)).fetchall()
         return [Task(res[0]) for res in results]
 
-    def in_cycle(self, parent: Task):
+    def in_cycle(self, parent: 'Task'):
         """
         Check whether assigning new parent to task forms a cycle.
         """
@@ -246,7 +246,7 @@ class Task():
         """
         self.weight = 0
 
-    def add(self, weight: int = 1, completion: float = 0, parent: Task = None):
+    def add(self, weight: int = 1, completion: float = 0, parent: 'Task' = None):
         """
         Add task to database.
         """
