@@ -118,6 +118,10 @@ def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task
         clear_window(tasks_content)
         #If viewing task hierarchy, ensure mode is set to H for future calls to render_tasklist()
         STATE["render_mode"] = "H"
+        #If None is passed as argument, render was called on invalid user input
+        if task is None:
+            Label(tasks_content,text="ERROR: Cannot render tree - invalid task name",font=FONTS["head"]).pack(anchor="center",side="top")
+            return
         #Print appropriate table heading
         if task is SUPERTASK:
             Label(tasks_content,text="ALL TASKS",font=FONTS["head"]).pack(anchor="center",side="top")
@@ -135,7 +139,7 @@ def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task
         row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
     return row
 
-def render_tasklist(mode: str = None, task: Task = SUPERTASK):
+def render_tasklist(mode: str = STATE["render_mode"], task: Task = STATE["head_task"]):
     if mode:
         STATE["render_mode"] = mode
     if STATE["render_mode"] == "L":
@@ -175,7 +179,7 @@ Button(render_options, text="All Tasks", command=lambda: render_tasklist("H")).g
 Label(render_options, text="View Subtasks Of:").grid(column = 0, row = 1, sticky='w')
 v_name = Entry(render_options)
 v_name.grid(column=1,row=1, sticky='w')
-Button(render_options, text="Change View", command=lambda: render_tasklist("H",task=Task(v_name.get().strip()))).grid(column = 2, row = 1)
+Button(render_options, text="Change View", command=lambda: render_tasklist("H",task= None if util.is_strint(v_name.get().strip()) or not v_name.get().strip() else Task(v_name.get().strip()))).grid(column = 2, row = 1)
 
 Label(render_options, text="Clear All:").grid(column = 0, row = 2, sticky='w')
 Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 2, sticky='w')
