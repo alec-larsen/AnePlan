@@ -3,22 +3,23 @@ import tkinter.font as font
 import tkinter.messagebox as mb
 from tkinter.ttk import *
 
-import core
+from core import _ROOT_DIRECTORY
+from task import *
 import util
 
 STATE = {
     "render_mode": "L", #Current mode tasklist renders in (Leaf-Only, Root-Only, Hierarchy)
-    "head_task": None #Task whose subtasks are rendered in hierarchy view. None renders all tasks.
+    "head_task": SUPERTASK #Task whose subtasks are rendered in hierarchy view. None renders all tasks.
 }
 
 #Initialize control panel
 master = Tk()
-master.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
+master.iconbitmap(str(_ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
 master.geometry("530x600")
 master.title("AneTask Control Panel")
 
 tasks = Toplevel()
-tasks.iconbitmap(str(core._ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
+tasks.iconbitmap(str(_ROOT_DIRECTORY) + "/assets/AnePlanL.ico")
 tasks.geometry("500x800")
 tasks.title("AneTasklist")
 
@@ -52,22 +53,16 @@ def shutdown():
         tasks.destroy()
         master.destroy()
 
-def task_str(name: int):
+def task_line(task: Task):
     """
-    Build string representation of given task with name.
+    Build string representations of root/leaf view table row for task.
 
     Note that all float values are rounded to two decimal places.
     """
-    #Get task by name and unpack resultant tuple to obtain remaining task details.
-    parent, weight, completed = core.conn.execute("""
-    SELECT *
-    FROM tasks
-    WHERE name = ?
-    """, (name,)).fetchone()[1:]
-    if weight == 0:
-        return[f"{name}", f"{completed:.2f}/{weight}", f"-%"]
+    if task.weight == 0:
+        return[f"{task.name}", f"{task.completion:.2f}/{task.weight}", f"-%"]
     else:
-        return[f"{name}", f"{completed:.2f}/{weight}", f"{completed/weight*100:.2f}%"]
+        return[f"{task.name}", f"{task.completion:.2f}/{task.weight}", f"{task.completion/task.weight*100:.2f}%"]
 
 def clear_window(window):
     for w in window.winfo_children():
@@ -87,14 +82,14 @@ def render_tasklist_lr(mode: str):
         #If viewing leaf tasks, ensure mode is set to L for future calls to render_tasklist()
         STATE["render_mode"] = "L"
         #Get all leaf tasks
-        task_names = core.get_leafs()
+        tasks = fetch_leafs()
         #Print appropriate table heading
         Label(tasks_content,text="COMPONENT TASKS",font=FONTS["head"]).pack(side="top")
     else:
         #If viewing root tasks, ensure mode is set to R for future calls to render_tasklist()
         STATE["render_mode"] = "R"
         #Get all root tasks
-        task_names = core.get_root_tasks()
+        tasks = fetch_roots()
         #Print appropriate table heading
         title = Label(tasks_content,text="ROOT TASKS",font=FONTS["head"])
         title.pack(side="top")
@@ -106,13 +101,13 @@ def render_tasklist_lr(mode: str):
     Label(task_table, text="Progress").grid(column = 1, row = 0, sticky = 'e', padx = 20)
     Label(task_table, text="Percent Completed").grid(column = 2, row = 0, sticky = 'e', padx = 20)
     #Render rows of task table from fetched tasks
-    for index, n in enumerate(task_names,1):
-        task_pieces = task_str(n)
+    for index, task in enumerate(tasks,1):
+        task_pieces = task_line(task)
         Label(task_table, text=task_pieces[0]).grid(column = 0, row = index, sticky = 'w')
         Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
         Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
 
-def render_tasklist_h(task: str = None, depth: int = 0, row: int = 0, task_tree = None):
+def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task_tree = None):
     """
     Render list of all tasks in hierarchy format.
     """
@@ -123,24 +118,28 @@ def render_tasklist_h(task: str = None, depth: int = 0, row: int = 0, task_tree 
         clear_window(tasks_content)
         #If viewing task hierarchy, ensure mode is set to H for future calls to render_tasklist()
         STATE["render_mode"] = "H"
-        #Print appropriate table heading
+        #If None is passed as argument, render was called on invalid user input
         if task is None:
+            Label(tasks_content,text="ERROR: Cannot render tree - invalid task name",font=FONTS["head"]).pack(anchor="center",side="top")
+            return
+        #Print appropriate table heading
+        if task is SUPERTASK:
             Label(tasks_content,text="ALL TASKS",font=FONTS["head"]).pack(anchor="center",side="top")
-        elif not core.task_exists(task):
-            Label(tasks_content,text=f"Task '{task}' not found",font=FONTS["head"]).pack(anchor="center",side="top")
+        elif not task:
+            Label(tasks_content,text=f"Task '{task.name}' not found",font=FONTS["head"]).pack(anchor="center",side="top")
         else:
-            Label(tasks_content,text=task.upper(),font=FONTS["head"]).pack(anchor="center", side="top")
+            Label(tasks_content,text=task.name.upper(),font=FONTS["head"]).pack(anchor="center", side="top")
         task_tree = Frame(tasks_content)
         task_tree.pack(anchor="nw",side="top")
     #Get all children of current task
-    for subtask in core.get_children(task):
+    for subtask in task.fetch_children():
         #Add indent for every level of depth subtask sits at in tree
-        Label(task_tree,text='● ' + core.task_str(subtask)).grid(column=0,row=row,padx=50*depth,pady=2,sticky="w")
+        Label(task_tree,text='● ' + str(subtask)).grid(column=0,row=row,padx=50*depth,pady=2,sticky="w")
         #Recursively call rendering from subtask. Increase depth by 1
         row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
     return row
 
-def render_tasklist(mode: str = STATE["render_mode"], task: str = STATE["head_task"]):
+def render_tasklist(mode: str = STATE["render_mode"], task: Task = STATE["head_task"]):
     if mode:
         STATE["render_mode"] = mode
     if STATE["render_mode"] == "L":
@@ -152,9 +151,10 @@ def render_tasklist(mode: str = STATE["render_mode"], task: str = STATE["head_ta
         render_tasklist_h(task=STATE["head_task"])
     #Force update of window state to ensure required height is correct
     master.update_idletasks()
-    canvas.yview_moveto(0)
-    #If the required height to render all content is less than the defauly window size, remove the scrollbar
+    #If the required height to render all content is less than the default window size, remove the scrollbar
     if tasks_content.winfo_reqheight() < 800:
+        #If the scrollbar is removed, ensure content is at the top of the frame
+        canvas.yview_moveto(0)
         scroll_controls.pack_forget()
     #Else, ensure it's properly rendered
     else:
@@ -162,7 +162,7 @@ def render_tasklist(mode: str = STATE["render_mode"], task: str = STATE["head_ta
 
 def clear_tasklist():
     if mb.askokcancel("Clear all tasks?","This action will clear ALL tasks from the tasklist.\nAre you sure you want to do this?"):
-        core.clear_tasks()
+        clear_list()
         render_tasklist()
 
 #Options widgets
@@ -179,7 +179,7 @@ Button(render_options, text="All Tasks", command=lambda: render_tasklist("H")).g
 Label(render_options, text="View Subtasks Of:").grid(column = 0, row = 1, sticky='w')
 v_name = Entry(render_options)
 v_name.grid(column=1,row=1, sticky='w')
-Button(render_options, text="Change View", command=lambda: render_tasklist("H",task=v_name.get())).grid(column = 2, row = 1)
+Button(render_options, text="Change View", command=lambda: render_tasklist("H",task= None if util.is_strint(v_name.get().strip()) or not v_name.get().strip() else Task(v_name.get().strip()))).grid(column = 2, row = 1)
 
 Label(render_options, text="Clear All:").grid(column = 0, row = 2, sticky='w')
 Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 2, sticky='w')
@@ -220,38 +220,55 @@ def add_task(name: str, weight: str, parent: str):
     reset_errors(add_task_flags)
     #This flag (as opposed to return statements after a single condition fails) ensures all error messages render in the GUI
     valid_task = True
+
     #Check task name is non-empty
     if not name:
         a_invalid_name.config(text="Task name must be non-empty")
         valid_task = False
+
     #Check task name is not strint
     elif util.is_strint(name):
         a_invalid_name.config(text="Task name cannot be an integer")
         valid_task = False
-    #Check that task name is not already in use
-    elif core.task_exists(name):
-        a_invalid_name.config(text="Task with this name already exists")
-        valid_task = False
+
+    #If task name is valid, check it is not in use by an existing task
+    else:
+        task = Task(name)
+        #Check that task name is not already in use
+        if task:
+            a_invalid_name.config(text="Task with this name already exists")
+            valid_task = False
+
     #Check inputted weight is valid
     if not util.is_strint(weight) or int(weight) < 0:
         a_invalid_weight.config(text="Weight must be non-negative")
         valid_task = False
-    #Check inputted parent task exists or no parent was given
-    if not core.task_exists(parent) and parent:
-        a_invalid_parent.config(text="Task with this name does not exist")
-        valid_task = False
-    #Empty string (meaning no entry) implies no task parent
+    else:
+        weight = int(weight)
+
+    #If parent name is empty, task has no parent (i.e. root task)
     if not parent:
-        parent = None
+        parent = SUPERTASK
+
+    #Check task name is not strint
+    elif util.is_strint(parent):
+        a_invalid_name.config(text="Task name cannot be an integer")
+        valid_task = False
+
+    #If parent was inputted and is valid, check that it names an exiting task in the database.
+    else:
+        parent = Task(parent)
+        if not parent:
+            a_invalid_parent.config(text="Task with this name does not exist")
+            valid_task = False
+
     if valid_task:
         #Add task
-        core.add_task(name, int(weight), 0, parent)
-        #Update weights of all higher-level tasks.
-        core.set_weight(parent,0)
+        task.add(weight, 0, parent)
         #Re-render the tasklist to see changes
         render_tasklist()
 
-Button(add_task_options, text="Add Task", command=lambda: add_task(a_name.get().strip(),a_weight.get(),a_parent.get().strip())).grid(column=0, row=4, sticky= "w")
+Button(add_task_options, text="Add Task", command=lambda: add_task(a_name.get(),a_weight.get(),a_parent.get())).grid(column=0, row=4, sticky= "w")
 
 #Modify task widgets
 modify_task_options = Frame(master)
@@ -290,24 +307,24 @@ m_invalid_parent.grid(column=2,row=5, sticky='w', padx=20)
 
 m_task_errors = [m_invalid_name_old, m_invalid_name, m_invalid_weight, m_invalid_comp, m_invalid_parent]
 
-def modify_name(task: str, name: str):
+def modify_name(task: Task, name: str):
     """
     Change name of task.
     """
+    #Check that name is not a strint
+    if util.is_strint(name):
+        m_invalid_name.config(text="Task name should not be an integer")
+        return
     #Check that new name is not used by any existing task
-    if core.task_exists(name):
-        if name == task:
+    if Task(name):
+        if name == task.name:
             m_invalid_name.config(text="Task is already named this")
         else:
             m_invalid_name.config(text="Task with this name already exists")
         return
-    #Check that name is not a strint
-    elif util.is_strint(name):
-        m_invalid_name.config(text="Task name should not be an integer")
-        return
-    core.set_name(task, name)
+    task.rename(name)
 
-def modify_weight(task: str, weight: str):
+def modify_weight(task: Task, weight: str):
     """
     Change weight of task.
     """
@@ -315,14 +332,14 @@ def modify_weight(task: str, weight: str):
     if not util.is_strint(weight) or int(weight) < 0:
         m_invalid_weight.config(text="Weight must be a non-negative integer")
         return
-    #
-    if core.get_children(task):
+    #Check if task has children. Tasks with children cannot have their weight modified
+    if task.fetch_children():
         m_invalid_name_old.config(text="This task has children, which fix its weight")
         return
     #Change weights
-    core.set_weight(task,weight)
+    task.weight= int(weight)
 
-def modify_completion(task: str, completion: str):
+def modify_completion(task: Task, completion: str):
     """
     Change completion of task.
 
@@ -337,7 +354,7 @@ def modify_completion(task: str, completion: str):
         numbers = completion.split('/')
         #If input is recognized as a fraction, it should be a proportion of the total task weight completed.
         if len(numbers) == 2 and util.is_strint(numbers[0]) and util.is_strint(numbers[1]):
-            completion = int(numbers[0])/int(numbers[1]) * core.get_weight(task)
+            completion = int(numbers[0])/int(numbers[1]) * task.weight
         #Otherwise the input is invalid
         else:
             m_invalid_comp.config(text="This input is not recognizable as a fraction or float")
@@ -347,30 +364,35 @@ def modify_completion(task: str, completion: str):
         m_invalid_comp.config(text="This input is not recognizable as a fraction or float")
         return
     #Check that completion is less than the task weight
-    if completion > core.get_weight(task):
+    if completion > task.weight:
         m_invalid_comp.config(text="Completion should not exceed task weight")
         return
-    if core.get_children(task):
+    if task.fetch_children():
         m_invalid_name_old.config(text="This task has children, which fix its completion")
         return
     #If all checks pass, update completion
-    core.set_completion(task,completion)
+    task.completion = completion
 
-def modify_parent(task: str, parent: str):
+def modify_parent(task: Task, parent: str):
     """
     Change parent of task.
 
     Note that parent-children relations are NOT permitted to be cyclical
     """
+    #Check that name is not a strint
+    if util.is_strint(parent):
+        m_invalid_name.config(text="Task name should not be an integer")
+        return
+    parent = Task(parent)
     #Check that parent exists
-    if not core.task_exists(parent):
+    if not parent:
         m_invalid_parent.config(text="Task with this name does not exist")
         return
     #Check that reassignment of parent does not form a closed cycle
-    if core.in_cycle(task,parent):
+    if task.in_cycle(parent):
         m_invalid_parent.config(text="This reassignment forms a cycle of parent-children relations")
         return
-    core.set_parent(task, parent)
+    task.parent = parent
 
 def modify_task(task: str, name: str, weight: str, completion: str, parent: str):
     """
@@ -378,12 +400,20 @@ def modify_task(task: str, name: str, weight: str, completion: str, parent: str)
     """
     #Reset relevant error flags
     reset_errors(m_task_errors)
+
     #Check that task name was inputted
     if not task:
         m_invalid_name_old.config(text="Current name of task to be modified is required")
         return
+
+    #Check that task is not a strint
+    if util.is_strint(task):
+        m_invalid_name.config(text="Task name should not be an integer")
+        return
+
+    task = Task(task)
     #Check that named task exists
-    if not core.task_exists(task):
+    if not task:
         m_invalid_name_old.config(text="Task with this name does not exist")
         return
 
@@ -420,29 +450,45 @@ r_invalid_name = Label(remove_task_options,text="")
 r_invalid_name.grid(column=2,row=1, sticky='w', padx=20)
 
 def remove_task(name: str):
+    """
+    Remove task with given name from the database
+    """
     reset_errors([r_invalid_name])
     valid_task = True
+
+    #Check that task name is given
     if not name:
         r_invalid_name.config(text="A task name is required")
         valid_task = False
+
+    #Check that task name is valid (not strint)
     elif util.is_strint(name):
         r_invalid_name.config(text="Task name should not be an integer")
         valid_task = False
-    elif not core.task_exists(name):
-        r_invalid_name.config(text="Task with this name does not exist")
-        valid_task = False
+
+    #Given task name is valid, check that it exists in the database
+    else:
+        task = Task(name)
+        if not task:
+            r_invalid_name.config(text="Task with this name does not exist")
+            valid_task = False
+
+    #Given that the task exists, begin removal procedures
     if valid_task:
-        children = [child for child in core.get_children(name)]
-        parent = core.get_parent(name)
+        #Children and parent are needed for removal message formatting
+        children = [child.name for child in task.fetch_children()]
+        parent = task.parent
+
+        #Format removal message, which states that all of task's children will be assigned to task's parent (or root if it has no parent)
         removal_message = f"Remove {name}?"
         if len(children) > 1:
-            removal_message += f"\n{len(children)} tasks ({', '.join(children)}) will be reassigned as " + ("root tasks." if not parent else f"children of task {parent}.")
+            removal_message += f"\n{len(children)} tasks ({', '.join(children)}) will be reassigned as " + ("root tasks." if parent is SUPERTASK else f"children of task {parent.name}.")
         elif len(children) == 1:
-            removal_message += f"\n1 task ({children[0]}) will be reassigned as " + ("a root task." if not parent else f"a child of task {parent}.")
+            removal_message += f"\n1 task ({children[0]}) will be reassigned as " + ("a root task." if parent is SUPERTASK else f"a child of task {parent.name}.")
+
+        #Give user chance to cancel operation in case of an accidental click
         if mb.askokcancel(f"Remove {name}?", removal_message):
-            core.remove_task(name)
-            #Update parent weights. 0 as weight argument sets parent weight to 0 if previously remvoed task was its last child - NOTE: may add a config option to allow users to opt between this and parent inheriting last child's weight
-            core.set_weight(parent,0)
+            task.remove()
             #After adding, we need to re-render the tasklist to see changes
             render_tasklist()
 

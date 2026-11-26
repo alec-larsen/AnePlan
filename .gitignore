@@ -6,3 +6,6 @@ main.build
 main.dist
 main.onefile-build
 main.exe
+tests
+.vscode
+.pytest_cache
