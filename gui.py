@@ -149,8 +149,8 @@ def render_tasklist(mode: str, task: Task = STATE["head_task"]):
         render_tasklist_h(task=STATE["head_task"])
     #Force update of window state to ensure required height is correct
     master.update_idletasks()
-    #If the required height to render all content is less than the default window size, remove the scrollbar
-    if tasks_content.winfo_reqheight() < 800:
+    #If the required height to render all content is less than the current window size, scrollbar is not needed
+    if tasks_content.winfo_reqheight() < tasks.winfo_height():
         #If the scrollbar is removed, ensure content is at the top of the frame
         canvas.yview_moveto(0)
         scroll_controls.pack_forget()
