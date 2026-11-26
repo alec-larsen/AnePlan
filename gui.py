@@ -160,6 +160,12 @@ def render_tasklist(mode: str = STATE["render_mode"], task: Task = STATE["head_t
     else:
         scroll_controls.pack(side="right",fill="y")
 
+def refresh_tasklist():
+    """
+    Render tasklist again with current settings.
+    """
+    render_tasklist(STATE["render_mode"],STATE["head_task"])
+
 def clear_tasklist():
     if mb.askokcancel("Clear all tasks?","This action will clear ALL tasks from the tasklist.\nAre you sure you want to do this?"):
         clear_list()
