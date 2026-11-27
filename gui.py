@@ -150,7 +150,7 @@ def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task
             Label(tasks_content,text=task.name.upper() + percent_complete,font=FONTS["head"]).pack(anchor="center", side="top")
             #If task has 100% completion, render special message.
             if task.weight == task.completion and not STATE["show_completed"]:
-                Label(tasks_content,text="All subtasks completed. Congratulations!").pack(anchor="center", side="top")
+                Label(tasks_content,text="All subtasks completed. Congratulations!").pack(anchor="center", side="left")
                 return
         task_tree = Frame(tasks_content)
         task_tree.pack(anchor="nw",side="top")
