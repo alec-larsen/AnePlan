@@ -9,7 +9,8 @@ import util
 
 STATE = {
     "render_mode": "H", #Current mode tasklist renders in (Leaf-Only, Root-Only, Hierarchy)
-    "head_task": SUPERTASK #Task whose subtasks are rendered in hierarchy view. None renders all tasks.
+    "head_task": SUPERTASK, #Task whose subtasks are rendered in hierarchy view. None renders all tasks.
+    "show_completed": True
 }
 
 #Initialize control panel
@@ -44,6 +45,13 @@ FONTS = {
     "head": font.Font(family="Helvetica", size=14, weight=font.BOLD),
     "subhead": font.Font(family="Helvetica", size=12, weight=font.BOLD)
 }
+
+def toggle_show_completed():
+    """
+    Flip state of show_completed and re-render checklist to update view
+    """
+    STATE["show_completed"] = not STATE["show_completed"]
+    refresh_tasklist()
 
 def shutdown():
     """
@@ -105,10 +113,12 @@ def render_tasklist_lr(mode: str):
     Label(task_table, text="Percent Completed").grid(column = 2, row = 0, sticky = 'e', padx = 20)
     #Render rows of task table from fetched tasks
     for index, task in enumerate(tasks,1):
-        task_pieces = task_line(task)
-        Label(task_table, text=task_pieces[0]).grid(column = 0, row = index, sticky = 'w')
-        Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
-        Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
+        #Render subtask if show completed is on or task is incomplete
+        if task.completion != task.weight or STATE["show_completed"]:
+            task_pieces = task_line(task)
+            Label(task_table, text=task_pieces[0]).grid(column = 0, row = index, sticky = 'w')
+            Label(task_table, text=task_pieces[1]).grid(column = 1, row = index, sticky = 'e', padx = 20)
+            Label(task_table, text=task_pieces[2]).grid(column = 2, row = index, sticky = 'e', padx = 20)
 
 def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task_tree = None):
     """
@@ -131,17 +141,25 @@ def render_tasklist_h(task: Task = SUPERTASK, depth: int = 0, row: int = 0, task
             total_weight = sum([root.weight for root in fetch_roots()])
             percent_complete = " (-%)" if total_weight == 0 else f" ({total_completion/total_weight*100:.2f}%)"
             Label(tasks_content,text="ALL TASKS" + percent_complete,font=FONTS["head"]).pack(anchor="center",side="top")
+        #If task does not exist, render 'task not found' message.
         elif not task:
             Label(tasks_content,text=f"Task '{task.name}' not found",font=FONTS["head"]).pack(anchor="center",side="top")
+        #Else, user is attempting to view subtasks of a specific task.
         else:
             percent_complete = " (-%)" if task.weight == 0 else f" ({task.completion/task.weight*100:.2f}%)"
             Label(tasks_content,text=task.name.upper() + percent_complete,font=FONTS["head"]).pack(anchor="center", side="top")
+            #If task has 100% completion, render special message.
+            if task.weight == task.completion and not STATE["show_completed"]:
+                Label(tasks_content,text="All subtasks completed. Congratulations!").pack(anchor="center", side="top")
+                return
         task_tree = Frame(tasks_content)
         task_tree.pack(anchor="nw",side="top")
     #Get all children of current task
     for subtask in task.fetch_children():
-        #Add indent for every level of depth subtask sits at in tree
-        Label(task_tree,text='● ' + str(subtask)).grid(column=0,row=row,padx=50*depth,pady=2,sticky="w")
+        #Render subtask if show completed is on or task is incomplete
+        if subtask.completion != subtask.weight or STATE["show_completed"]:
+            #Add indent for every level of depth subtask sits at in tree
+            Label(task_tree,text='● ' + str(subtask)).grid(column=0,row=row,padx=50*depth,pady=2,sticky="w")
         #Recursively call rendering from subtask. Increase depth by 1
         row = render_tasklist_h(subtask, depth+1, row+1, task_tree)
     return row
@@ -201,6 +219,14 @@ subview_row.grid(column=1,row=1,sticky="w")
 #Clear all option
 Label(render_options, text="Clear All:").grid(column=0,row=2,sticky="w")
 Button(render_options, text="Clear", command=clear_tasklist).grid(column=1,row=2,sticky="w")
+
+#Show completed option
+show_completed = IntVar()
+Label(render_options, text="Show Completed Tasks?").grid(column=0,row=3,sticky="w")
+show_done = Checkbutton(render_options,var=show_completed,onvalue=1,offvalue=0,command=toggle_show_completed)
+show_done.grid(column=1,row=3,sticky="w")
+show_completed.set(1)
+
 
 #Add task widgets
 add_task_options = Frame(master)
