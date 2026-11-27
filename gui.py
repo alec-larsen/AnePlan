@@ -182,18 +182,25 @@ Label(master, text="Options", font=FONTS["subhead"]).grid(column=0,row=0,sticky=
 render_options = Frame(master)
 render_options.grid(column=0,row=1,sticky="w")
 
-Label(render_options, text="Tasklist Quickview:").grid(column = 0, row = 0, sticky='w')
-Button(render_options, text="Leaf-Only Mode", command=lambda: render_tasklist("L")).grid(column = 1, row = 0)
-Button(render_options, text="Root-Only Mode", command=lambda: render_tasklist("R")).grid(column = 2, row = 0)
-Button(render_options, text="All Tasks", command=lambda: render_tasklist("H")).grid(column = 3, row = 0)
+#Tasklist quickview options
+Label(render_options, text="Tasklist Quickview:").grid(column=0,row=0,sticky="w")
+quickview_buttons = Frame(render_options)
+Button(quickview_buttons, text="Leaf-Only Mode", command=lambda: render_tasklist("L")).pack(side="left",padx=3)
+Button(quickview_buttons, text="Root-Only Mode", command=lambda: render_tasklist("R")).pack(side="left",padx=3)
+Button(quickview_buttons, text="All Tasks", command=lambda: render_tasklist("H")).pack(side="left",padx=3)
+quickview_buttons.grid(column=1,row=0,sticky="w")
 
-Label(render_options, text="View Subtasks Of:").grid(column = 0, row = 1, sticky='w')
-v_name = Entry(render_options)
-v_name.grid(column=1,row=1, sticky='w')
-Button(render_options, text="Change View", command=lambda: render_tasklist("H",task= None if util.is_strint(v_name.get().strip()) or not v_name.get().strip() else Task(v_name.get().strip()))).grid(column = 2, row = 1)
+#View subtasks option
+Label(render_options, text="View Subtasks Of:").grid(column=0,row=1,sticky="w")
+subview_row = Frame(render_options)
+v_name = Entry(subview_row)
+v_name.pack(side="left",padx=3)
+Button(subview_row, text="Change View", command=lambda: render_tasklist("H",task= None if util.is_strint(v_name.get().strip()) or not v_name.get().strip() else Task(v_name.get().strip()))).pack(side="left",padx=3)
+subview_row.grid(column=1,row=1,sticky="w")
 
-Label(render_options, text="Clear All:").grid(column = 0, row = 2, sticky='w')
-Button(render_options, text="Clear", command=clear_tasklist).grid(column = 1, row = 2, sticky='w')
+#Clear all option
+Label(render_options, text="Clear All:").grid(column=0,row=2,sticky="w")
+Button(render_options, text="Clear", command=clear_tasklist).grid(column=1,row=2,sticky="w")
 
 #Add task widgets
 add_task_options = Frame(master)
